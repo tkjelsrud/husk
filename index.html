@@ -17,7 +17,7 @@
 
         <div id="error-msg" class="alert alert-danger d-none text-start" role="alert"></div>
         <div id="standalone-msg" class="alert alert-warning d-none text-start small" role="alert">
-          Innlogging med Google kan feile fra hjemskjermmodus pa iPhone/iPad. Apne i Safari for a logge inn.
+          Innlogging med Google fungerer best i Safari, ikke fra hjemskjermen pa iPhone/iPad.
         </div>
 
         <button id="google-btn" class="btn btn-dark w-100 d-flex align-items-center justify-content-center gap-2">
@@ -61,6 +61,10 @@
         return 'Et tidligere innloggingsvindu er fortsatt aktivt. Lukk det og prov igjen.';
       }
 
+      if (code === 'auth/web-storage-unsupported') {
+        return 'Nettleseren blokkerer lagring som Google-innlogging trenger. Prov i vanlig Safari-vindu, ikke privat modus.';
+      }
+
       return `Innlogging feilet: ${code || 'ukjent feil'}. Sjekk nettleserkonsollen for detaljer.`;
     }
 
@@ -74,8 +78,6 @@
 
     if (isIosStandaloneMode()) {
       standaloneMsg.classList.remove('d-none');
-      loginButton.disabled = true;
-      loginButton.title = 'Apne i Safari for a logge inn med Google';
     }
 
     const params = new URLSearchParams(window.location.search);

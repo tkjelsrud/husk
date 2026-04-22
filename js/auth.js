@@ -2,20 +2,15 @@ import { app } from './firebase-config.js';
 import {
   getAuth,
   GoogleAuthProvider,
-  browserLocalPersistence,
   getRedirectResult,
   onAuthStateChanged,
-  setPersistence,
   signInWithPopup,
-  signInWithRedirect,
   signOut
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
 
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
-
-const persistenceReady = setPersistence(auth, browserLocalPersistence);
 
 async function loadRuntimeConfig() {
   try {
@@ -47,31 +42,12 @@ export async function isAuthorizedUser(user) {
   return allowedEmails.includes(normalizeEmail(user.email));
 }
 
-function shouldFallbackToRedirect(err) {
-  const code = String(err?.code || '');
-  return code === 'auth/popup-blocked'
-    || code === 'auth/cancelled-popup-request'
-    || code === 'auth/operation-not-supported-in-this-environment';
-}
-
 export async function finalizeLoginRedirect() {
-  await persistenceReady;
   return getRedirectResult(auth);
 }
 
 export async function loginWithGoogle() {
-  await persistenceReady;
-
-  try {
-    return await signInWithPopup(auth, provider);
-  } catch (err) {
-    if (!shouldFallbackToRedirect(err)) {
-      throw err;
-    }
-
-    await signInWithRedirect(auth, provider);
-    return { redirected: true };
-  }
+  return signInWithPopup(auth, provider);
 }
 
 export function logout(reason = '') {
@@ -81,24 +57,20 @@ export function logout(reason = '') {
 }
 
 export function requireAuth(initFn) {
-  persistenceReady
-    .then(() => {
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-          redirectToIndex();
-          return;
-        }
-
-        if (!await isAuthorizedUser(user)) {
-          await logout('unauthorized');
-          return;
-        }
-
-        initFn(user);
-      });
-    })
-    .catch((err) => {
-      console.error(err);
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
       redirectToIndex();
+      return;
+    }
+
+    if (!await isAuthorizedUser(user)) {
+      await logout('unauthorized');
+      return;
+    }
+
+    initFn(user);
+  }, (err) => {
+    console.error(err);
+    redirectToIndex();
     });
 }
