@@ -9,7 +9,7 @@ This is a plain static site. There is no bundler, framework, or npm-based app ru
 - Google login with a small allowlist
 - persistent browser session via Firebase local auth persistence
 - one protected input form for 1 to 5 lines of text plus category
-- each saved record gets a server timestamp, `processed: false`, and empty due date
+- each saved record gets a server timestamp, `priority: normal`, `processed: false`, and empty due date
 - separate read-only listing page for all submitted entries
 
 ## Firebase setup
@@ -51,6 +51,7 @@ The app stores records in the `entries` collection with this shape:
 {
   "textInput": "line 1\nline 2",
   "category": "unknown",
+  "priority": "normal",
   "processed": false,
   "dueDate": null,
   "addedByUid": "firebase-user-uid",
@@ -67,6 +68,30 @@ Allowed categories:
 - `houseproj`
 - `family`
 - `general`
+
+Allowed priorities:
+
+- `low`
+- `normal`
+- `high`
+
+## Backend worker
+
+This repo also supports a separate private backend worker under `backend/`.
+
+The backend is meant to run on a private server, poll Firestore for unprocessed
+entries, enrich them with GPT, and write the results back.
+
+No backend secrets are committed to git.
+
+Current backend rule set:
+
+- Norwegian and English text is supported
+- `important` or `viktig` sets `priority = high`
+- otherwise `priority = normal`
+- obvious work-related text is categorized as `work`
+- `tomorrow` / `i morgen` sets due date to tomorrow
+- `next week` / `neste uke` sets due date to next week
 
 ## Local run
 

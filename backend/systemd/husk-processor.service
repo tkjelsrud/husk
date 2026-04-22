@@ -1,0 +1,9 @@
+[Unit]
+Description=Husk backend processor
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tkjelsrud
+WorkingDirectory=/home/tkjelsrud/husk
+ExecStart=/home/tkjelsrud/husk/.venv/bin/python -m backend.processor.main --once

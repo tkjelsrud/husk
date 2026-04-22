@@ -21,7 +21,7 @@ function hideStatus() {
 
 function renderEntries(entries) {
   if (entries.length === 0) {
-    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Ingen ennå.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Ingen ennå.</td></tr>';
     return;
   }
 
@@ -33,12 +33,14 @@ function renderEntries(entries) {
     const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
     const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
     const category = escapeHtml(formatCategory(entry.category));
+    const priority = escapeHtml(formatPriority(entry.priority));
 
     return `
       <tr>
         <td>${createdAt}</td>
         <td><pre class="entry-text">${text}</pre></td>
         <td>${category}</td>
+        <td>${priority}</td>
         <td><span class="status-badge ${processedClass}">${processedLabel}</span></td>
         <td>${dueDate}</td>
         <td>${addedBy}</td>
@@ -59,6 +61,17 @@ function formatCategory(value) {
   };
 
   return labels[category] || category;
+}
+
+function formatPriority(value) {
+  const priority = String(value || 'normal');
+  const labels = {
+    low: 'Lav',
+    normal: 'Normal',
+    high: 'Hoy'
+  };
+
+  return labels[priority] || priority;
 }
 
 function formatTimestamp(value) {
@@ -95,7 +108,7 @@ async function loadEntries() {
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
-    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
   } finally {
     refreshButton.disabled = false;
   }

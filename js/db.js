@@ -20,10 +20,17 @@ export const ENTRY_CATEGORIES = [
   'general'
 ];
 
+export const ENTRY_PRIORITIES = [
+  'low',
+  'normal',
+  'high'
+];
+
 export async function addEntry({ textInput, category }, user) {
   return addDoc(collection(db, 'entries'), {
     textInput,
     category,
+    priority: 'normal',
     processed: false,
     dueDate: null,
     addedByUid: user.uid,

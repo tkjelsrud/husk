@@ -1,5 +1,9 @@
 node_modules/
 .env.local
 .local/
+.venv/
+backend/.env
+backend/.secrets/
+backend/.state/
 js/firebase-config.js
 js/runtime-config.js
