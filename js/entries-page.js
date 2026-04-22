@@ -21,12 +21,12 @@ function hideStatus() {
 
 function renderEntries(entries) {
   if (entries.length === 0) {
-    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">No entries yet.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Ingen ennå.</td></tr>';
     return;
   }
 
   entriesBody.innerHTML = entries.map((entry) => {
-    const processedLabel = entry.processed ? 'Yes' : 'No';
+    const processedLabel = entry.processed ? 'Ja' : 'Nei';
     const processedClass = entry.processed ? 'done' : 'pending';
     const text = escapeHtml(String(entry.textInput || ''));
     const addedBy = escapeHtml(String(entry.addedByEmail || ''));
@@ -49,7 +49,16 @@ function renderEntries(entries) {
 
 function formatCategory(value) {
   const category = String(value || 'unknown');
-  return category.charAt(0).toUpperCase() + category.slice(1);
+  const labels = {
+    unknown: 'Ukjent',
+    work: 'Jobb',
+    creative: 'Kreativt',
+    houseproj: 'Houseproj',
+    family: 'Familie',
+    general: 'Generelt'
+  };
+
+  return labels[category] || category;
 }
 
 function formatTimestamp(value) {
@@ -85,8 +94,8 @@ async function loadEntries() {
     renderEntries(entries);
   } catch (err) {
     console.error(err);
-    showStatus('danger', 'Could not load entries.');
-    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Entries could not be loaded.</td></tr>';
+    showStatus('danger', 'Kunne ikke laste listen.');
+    entriesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
   } finally {
     refreshButton.disabled = false;
   }

@@ -9,9 +9,7 @@ const submitButton = document.getElementById('submit-btn');
 const logoutButton = document.getElementById('logout-btn');
 const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
-const datePill = document.getElementById('date-pill');
 
-datePill.textContent = 'Created with server time';
 logoutButton.addEventListener('click', () => logout());
 
 function showStatus(kind, message) {
@@ -50,11 +48,11 @@ requireAuth((user) => {
       }, user);
       form.reset();
       categoryField.value = 'unknown';
-      showStatus('success', 'Entry saved.');
+      showStatus('success', 'Lagret.');
       textField.focus();
     } catch (err) {
       console.error(err);
-      showStatus('danger', 'Could not save the entry.');
+      showStatus('danger', 'Kunne ikke lagre.');
     } finally {
       submitButton.disabled = false;
     }

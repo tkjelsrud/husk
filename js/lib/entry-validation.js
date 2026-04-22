@@ -9,12 +9,12 @@ export function normalizeEntryText(value) {
 export function validateEntryText(value) {
   const normalized = normalizeEntryText(value);
   if (!normalized) {
-    return { ok: false, message: 'Enter at least 1 line of text.' };
+    return { ok: false, message: 'Skriv minst en linje.' };
   }
 
   const lines = normalized.split('\n');
   if (lines.length > 5) {
-    return { ok: false, message: 'Use at most 5 lines.' };
+    return { ok: false, message: 'Bruk maks 5 linjer.' };
   }
 
   return { ok: true };
@@ -22,7 +22,7 @@ export function validateEntryText(value) {
 
 export function validateCategory(value, allowedCategories) {
   if (!Array.isArray(allowedCategories) || !allowedCategories.includes(value)) {
-    return { ok: false, message: 'Choose a valid category.' };
+    return { ok: false, message: 'Velg en gyldig kategori.' };
   }
 
   return { ok: true };

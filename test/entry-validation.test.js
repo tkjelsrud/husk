@@ -10,14 +10,14 @@ test('normalizeEntryText trims lines and removes blanks', () => {
 test('validateEntryText rejects empty input', () => {
   assert.deepEqual(validateEntryText('   '), {
     ok: false,
-    message: 'Enter at least 1 line of text.'
+    message: 'Skriv minst en linje.'
   });
 });
 
 test('validateEntryText rejects more than five lines', () => {
   assert.deepEqual(validateEntryText('1\n2\n3\n4\n5\n6'), {
     ok: false,
-    message: 'Use at most 5 lines.'
+    message: 'Bruk maks 5 linjer.'
   });
 });
 
@@ -28,7 +28,7 @@ test('validateEntryText accepts one to five lines', () => {
 test('validateCategory rejects invalid category', () => {
   assert.deepEqual(validateCategory('invalid', ['unknown', 'work']), {
     ok: false,
-    message: 'Choose a valid category.'
+    message: 'Velg en gyldig kategori.'
   });
 });
 
