@@ -1,3 +1,5 @@
 node_modules/
+.env.local
+.local/
 js/firebase-config.js
 js/runtime-config.js

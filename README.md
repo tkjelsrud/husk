@@ -2,12 +2,14 @@
 
 Small private Firebase web app for a shared input queue.
 
+This is a plain static site. There is no bundler, framework, or npm-based app runtime.
+
 ## What it does
 
 - Google login with a small allowlist
 - persistent browser session via Firebase local auth persistence
-- one protected input form for 1 to 5 lines of text
-- each saved record gets today's date and `processed: false`
+- one protected input form for 1 to 5 lines of text plus category
+- each saved record gets a server timestamp, `processed: false`, and empty due date
 - separate read-only listing page for all submitted entries
 
 ## Firebase setup
@@ -47,21 +49,31 @@ The app stores records in the `entries` collection with this shape:
 
 ```json
 {
-  "text": "line 1\nline 2",
-  "date": "2026-04-22",
+  "textInput": "line 1\nline 2",
+  "category": "unknown",
   "processed": false,
+  "dueDate": null,
   "addedByUid": "firebase-user-uid",
-  "addedByEmail": "tkjelsrud@gmail.com",
+  "addedByEmail": "user@example.com",
   "createdAt": "server timestamp"
 }
 ```
+
+Allowed categories:
+
+- `unknown`
+- `work`
+- `creative`
+- `houseproj`
+- `family`
+- `general`
 
 ## Local run
 
 This is a static app. Serve it locally with any simple file server, for example:
 
 ```sh
-npx serve .
+python3 -m http.server 8000
 ```
 
 Then open the served URL in the browser.
@@ -91,7 +103,7 @@ No Firebase keys or personal emails need to be committed to git.
 Run:
 
 ```sh
-npm test
+node --test
 ```
 
 The test suite currently covers the 1 to 5 line validation helper.

@@ -19,3 +19,11 @@ export function validateEntryText(value) {
 
   return { ok: true };
 }
+
+export function validateCategory(value, allowedCategories) {
+  if (!Array.isArray(allowedCategories) || !allowedCategories.includes(value)) {
+    return { ok: false, message: 'Choose a valid category.' };
+  }
+
+  return { ok: true };
+}

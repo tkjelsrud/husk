@@ -11,11 +11,21 @@ import {
 
 const db = getFirestore(app);
 
-export async function addEntry(text, user) {
+export const ENTRY_CATEGORIES = [
+  'unknown',
+  'work',
+  'creative',
+  'houseproj',
+  'family',
+  'general'
+];
+
+export async function addEntry({ textInput, category }, user) {
   return addDoc(collection(db, 'entries'), {
-    text,
-    date: getTodayLocalDate(),
+    textInput,
+    category,
     processed: false,
+    dueDate: null,
     addedByUid: user.uid,
     addedByEmail: user.email || '',
     createdAt: serverTimestamp()
@@ -26,12 +36,4 @@ export async function getEntries() {
   const entryQuery = query(collection(db, 'entries'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(entryQuery);
   return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-}
-
-export function getTodayLocalDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

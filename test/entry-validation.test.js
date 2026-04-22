@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeEntryText, validateEntryText } from '../js/lib/entry-validation.js';
+import { normalizeEntryText, validateCategory, validateEntryText } from '../js/lib/entry-validation.js';
 
 test('normalizeEntryText trims lines and removes blanks', () => {
   assert.equal(normalizeEntryText(' one \n\n two \n'), 'one\ntwo');
@@ -23,4 +23,15 @@ test('validateEntryText rejects more than five lines', () => {
 
 test('validateEntryText accepts one to five lines', () => {
   assert.deepEqual(validateEntryText('1\n2\n3'), { ok: true });
+});
+
+test('validateCategory rejects invalid category', () => {
+  assert.deepEqual(validateCategory('invalid', ['unknown', 'work']), {
+    ok: false,
+    message: 'Choose a valid category.'
+  });
+});
+
+test('validateCategory accepts allowed category', () => {
+  assert.deepEqual(validateCategory('unknown', ['unknown', 'work']), { ok: true });
 });
