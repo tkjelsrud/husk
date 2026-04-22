@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
-
-from openai import OpenAI
+import subprocess
 
 from .schemas import ENTRY_CATEGORIES, ENTRY_PRIORITIES
 
 
 SYSTEM_PROMPT = """
 You classify personal inbox entries written in Norwegian or English.
-Return only JSON.
+Return only compact JSON.
 Choose category only from the allowed categories.
 Choose priority only from the allowed priorities.
 If no due date is clearly present, return null.
@@ -19,9 +18,9 @@ Use priority 'high' when the text contains clearly urgent language.
 """.strip()
 
 
-def classify_entry(api_key: str, model: str, text_input: str, current_time: str):
-    client = OpenAI(api_key=api_key)
+def classify_entry(model: str, text_input: str, current_time: str):
     prompt = {
+        'system': SYSTEM_PROMPT,
         'textInput': text_input,
         'currentTime': current_time,
         'languages': ['Norwegian', 'English'],
@@ -35,13 +34,17 @@ def classify_entry(api_key: str, model: str, text_input: str, current_time: str)
         },
     }
 
-    response = client.responses.create(
-        model=model,
-        input=[
-            {'role': 'system', 'content': SYSTEM_PROMPT},
-            {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=True)},
-        ],
-        temperature=0,
+    command = ['opencode', 'run']
+    if model:
+        command.extend(['--model', model])
+    command.append(json.dumps(prompt, ensure_ascii=True))
+
+    completed = subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        text=True,
     )
 
-    return json.loads(response.output_text)
+    output = completed.stdout.strip()
+    return json.loads(output)

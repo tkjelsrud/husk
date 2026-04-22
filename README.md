@@ -80,7 +80,7 @@ Allowed priorities:
 This repo also supports a separate private backend worker under `backend/`.
 
 The backend is meant to run on a private server, poll Firestore for unprocessed
-entries, enrich them with GPT, and write the results back.
+entries, enrich them with `opencode`, and write the results back.
 
 No backend secrets are committed to git.
 

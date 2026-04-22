@@ -6,7 +6,7 @@ Private backend worker for processing `husk` Firestore entries.
 
 1. polls Firestore for entries where `processed == false`
 2. applies backend rules for due date, priority, and obvious work detection
-3. sends entry text to an OpenAI model for the remaining classification
+3. sends entry text to `opencode run` for the remaining classification
 3. writes back:
     - `category`
     - `priority`
@@ -42,8 +42,7 @@ Create these locally on the server:
 Example `backend/.env`:
 
 ```env
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4.1-mini
+OPENCODE_MODEL=
 FIREBASE_PROJECT_ID=husk-f59b1
 FIREBASE_SERVICE_ACCOUNT_PATH=/home/tkjelsrud/husk/backend/.secrets/firebase-service-account.json
 POLL_LIMIT=10
@@ -61,3 +60,5 @@ python -m backend.processor.main --once
 ## Scheduling
 
 Recommended: `systemd` timer on Ubuntu.
+
+Current deployment model can also use cron every 10 minutes between 06:00 and 22:00.

@@ -116,8 +116,7 @@ def process_entry(settings, entry: dict):
     rule_category = _extract_category(text_input)
 
     result = classify_entry(
-        api_key=settings.openai_api_key,
-        model=settings.openai_model,
+        model=settings.opencode_model,
         text_input=text_input,
         current_time=now.isoformat(),
     )
