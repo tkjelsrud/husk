@@ -1,0 +1,97 @@
+# Husk
+
+Small private Firebase web app for a shared input queue.
+
+## What it does
+
+- Google login with a small allowlist
+- persistent browser session via Firebase local auth persistence
+- one protected input form for 1 to 5 lines of text
+- each saved record gets today's date and `processed: false`
+- separate read-only listing page for all submitted entries
+
+## Firebase setup
+
+Set this up as its own Firebase project.
+
+### 1. Create the Firebase project
+
+1. Go to [console.firebase.google.com](https://console.firebase.google.com).
+2. Create a new project for `husk`.
+3. Enable **Google** under Authentication -> Sign-in method.
+4. Add your deployment domain under Authentication -> Settings -> Authorized domains.
+5. Create Firestore in production mode.
+
+### 2. Add local config files
+
+Create `js/firebase-config.js` from [`js/firebase-config.example.js`](js/firebase-config.example.js).
+
+Create `js/runtime-config.js` from [`js/runtime-config.example.js`](js/runtime-config.example.js) and replace the placeholder email:
+
+```js
+export const runtimeConfig = {
+  allowedEmails: [
+    'first-user@example.com',
+    'second-user@example.com'
+  ]
+};
+```
+
+### 3. Firestore rules
+
+Use [`firestore.rules.example`](firestore.rules.example) as the starting point.
+
+Replace the placeholder emails and publish the rules in Firebase.
+
+The app stores records in the `entries` collection with this shape:
+
+```json
+{
+  "text": "line 1\nline 2",
+  "date": "2026-04-22",
+  "processed": false,
+  "addedByUid": "firebase-user-uid",
+  "addedByEmail": "tkjelsrud@gmail.com",
+  "createdAt": "server timestamp"
+}
+```
+
+## Local run
+
+This is a static app. Serve it locally with any simple file server, for example:
+
+```sh
+npx serve .
+```
+
+Then open the served URL in the browser.
+
+## GitHub Pages
+
+The repo includes a GitHub Pages workflow that writes `js/firebase-config.js`
+and `js/runtime-config.js` during deploy from repository secrets.
+
+Add these GitHub repository secrets before enabling Pages from
+`GitHub Actions`:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MEASUREMENT_ID`
+- `FIREBASE_ALLOWED_EMAIL_1`
+- `FIREBASE_ALLOWED_EMAIL_2`
+
+No Firebase keys or personal emails need to be committed to git.
+
+## Tests
+
+Run:
+
+```sh
+npm test
+```
+
+The test suite currently covers the 1 to 5 line validation helper.

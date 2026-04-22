@@ -1,0 +1,8 @@
+{
+  "name": "husk-notes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

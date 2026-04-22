@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAllowedUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'first-user@example.com',
+          'second-user@example.com'
+        ];
+    }
+
+    match /entries/{docId} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.date is string
+        && request.resource.data.processed == false
+        && request.resource.data.addedByUid == request.auth.uid
+        && request.resource.data.addedByEmail == request.auth.token.email;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
