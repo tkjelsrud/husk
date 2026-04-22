@@ -15,6 +15,7 @@ service cloud.firestore {
       allow create: if isAllowedUser()
         && request.resource.data.textInput is string
         && request.resource.data.textInput.size() > 0
+        && request.resource.data.textInput.size() <= 1500
         && request.resource.data.processed == false
         && request.resource.data.dueDate == null
         && request.resource.data.category in [
@@ -27,7 +28,7 @@ service cloud.firestore {
         ]
         && request.resource.data.addedByUid == request.auth.uid
         && request.resource.data.addedByEmail == request.auth.token.email
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.createdAt is timestamp;
       allow update, delete: if false;
     }
 

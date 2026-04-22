@@ -47,11 +47,11 @@ export async function isAuthorizedUser(user) {
   return allowedEmails.includes(normalizeEmail(user.email));
 }
 
-function shouldUseRedirectLogin() {
-  const ua = navigator.userAgent || '';
-  const isIOSDevice = /iPad|iPhone|iPod/.test(ua);
-  const isIPadDesktopMode = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-  return isIOSDevice || isIPadDesktopMode;
+function shouldFallbackToRedirect(err) {
+  const code = String(err?.code || '');
+  return code === 'auth/popup-blocked'
+    || code === 'auth/cancelled-popup-request'
+    || code === 'auth/operation-not-supported-in-this-environment';
 }
 
 export async function finalizeLoginRedirect() {
@@ -62,12 +62,16 @@ export async function finalizeLoginRedirect() {
 export async function loginWithGoogle() {
   await persistenceReady;
 
-  if (shouldUseRedirectLogin()) {
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (err) {
+    if (!shouldFallbackToRedirect(err)) {
+      throw err;
+    }
+
     await signInWithRedirect(auth, provider);
     return { redirected: true };
   }
-
-  return signInWithPopup(auth, provider);
 }
 
 export function logout(reason = '') {

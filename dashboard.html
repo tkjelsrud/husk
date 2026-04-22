@@ -11,7 +11,7 @@
   <nav class="navbar navbar-expand-sm navbar-dark app-nav">
     <div class="container">
       <a class="navbar-brand" href="dashboard.html">Husk</a>
-      <div class="navbar-nav ms-auto align-items-sm-center gap-sm-2">
+      <div class="app-nav-links navbar-nav ms-auto align-items-sm-center gap-sm-2">
         <a class="nav-link active" href="dashboard.html">Ny</a>
         <a class="nav-link" href="entries.html">Liste</a>
         <span id="user-label" class="nav-user small"></span>
@@ -64,14 +64,6 @@
     </div>
   </main>
 
-  <script type="module">
-    import('./js/dashboard.js').catch((err) => {
-      const status = document.getElementById('status-msg');
-      status.textContent = 'Kunne ikke laste siden.';
-      status.className = 'alert alert-danger';
-      status.classList.remove('d-none');
-      console.error(err);
-    });
-  </script>
+  <script type="module" src="./js/dashboard.js"></script>
 </body>
 </html>
