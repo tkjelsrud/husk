@@ -16,19 +16,32 @@ from .firestore_client import (
 def run_once():
     settings = load_settings()
     db = create_client(settings.firebase_service_account_path)
-    docs = fetch_unprocessed_entries(db, settings.poll_limit)
+    seen_ids = set()
+    total_processed = 0
 
-    logging.info('Found %s unprocessed entries', len(docs))
+    while True:
+        docs = [doc for doc in fetch_unprocessed_entries(db, settings.poll_limit) if doc.id not in seen_ids]
+        if not docs:
+            break
 
-    for doc in docs:
-        data = doc.to_dict() or {}
-        try:
-            payload = process_entry(settings, data)
-            update_processed_entry(db, doc.id, payload)
-            logging.info('Processed %s', doc.id)
-        except Exception as err:
-            logging.exception('Failed processing %s', doc.id)
-            update_entry_error(db, doc.id, str(err))
+        logging.info('Found %s unprocessed entries in batch', len(docs))
+
+        for doc in docs:
+            seen_ids.add(doc.id)
+            data = doc.to_dict() or {}
+            try:
+                payload = process_entry(settings, data)
+                update_processed_entry(db, doc.id, payload)
+                total_processed += 1
+                logging.info('Processed %s', doc.id)
+            except Exception as err:
+                logging.exception('Failed processing %s', doc.id)
+                update_entry_error(db, doc.id, str(err))
+
+        if len(docs) < settings.poll_limit:
+            break
+
+    logging.info('Finished processing run, processed=%s', total_processed)
 
 
 def main():

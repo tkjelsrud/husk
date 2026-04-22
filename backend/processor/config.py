@@ -14,6 +14,7 @@ load_dotenv(ENV_PATH)
 
 @dataclass(frozen=True)
 class Settings:
+    opencode_bin: str
     opencode_model: str
     firebase_project_id: str
     firebase_service_account_path: str
@@ -22,6 +23,7 @@ class Settings:
 
 def load_settings() -> Settings:
     return Settings(
+        opencode_bin=os.environ.get('OPENCODE_BIN', 'opencode').strip() or 'opencode',
         opencode_model=os.environ.get('OPENCODE_MODEL', '').strip(),
         firebase_project_id=os.environ['FIREBASE_PROJECT_ID'],
         firebase_service_account_path=os.environ['FIREBASE_SERVICE_ACCOUNT_PATH'],

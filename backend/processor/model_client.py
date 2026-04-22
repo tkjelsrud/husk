@@ -18,7 +18,7 @@ Use priority 'high' when the text contains clearly urgent language.
 """.strip()
 
 
-def classify_entry(model: str, text_input: str, current_time: str):
+def classify_entry(opencode_bin: str, model: str, text_input: str, current_time: str):
     prompt = {
         'system': SYSTEM_PROMPT,
         'textInput': text_input,
@@ -34,7 +34,7 @@ def classify_entry(model: str, text_input: str, current_time: str):
         },
     }
 
-    command = ['opencode', 'run']
+    command = [opencode_bin, 'run']
     if model:
         command.extend(['--model', model])
     command.append(json.dumps(prompt, ensure_ascii=True))
@@ -47,4 +47,22 @@ def classify_entry(model: str, text_input: str, current_time: str):
     )
 
     output = completed.stdout.strip()
-    return json.loads(output)
+    return _extract_json(output)
+
+
+def _extract_json(output: str):
+    output = output.strip()
+    if not output:
+        raise ValueError('opencode returned empty output')
+
+    try:
+        return json.loads(output)
+    except json.JSONDecodeError:
+        pass
+
+    start = output.find('{')
+    end = output.rfind('}')
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(f'opencode did not return JSON: {output[:400]}')
+
+    return json.loads(output[start:end + 1])

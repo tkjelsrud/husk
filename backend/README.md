@@ -42,10 +42,11 @@ Create these locally on the server:
 Example `backend/.env`:
 
 ```env
+OPENCODE_BIN=/home/tkjelsrud/.opencode/bin/opencode
 OPENCODE_MODEL=
 FIREBASE_PROJECT_ID=husk-f59b1
 FIREBASE_SERVICE_ACCOUNT_PATH=/home/tkjelsrud/husk/backend/.secrets/firebase-service-account.json
-POLL_LIMIT=10
+POLL_LIMIT=25
 ```
 
 ## Run once
@@ -59,6 +60,11 @@ python -m backend.processor.main --once
 
 ## Scheduling
 
-Recommended: `systemd` timer on Ubuntu.
+Recommended deployment here: cron every 10 minutes between 06:00 and 22:00.
 
-Current deployment model can also use cron every 10 minutes between 06:00 and 22:00.
+The included shell wrapper skips processing cleanly if local-only prerequisites are
+missing, for example:
+
+- Firebase service account JSON is missing
+- `opencode` is not installed yet
+- `opencode` is not authenticated yet

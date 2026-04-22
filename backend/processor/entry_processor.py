@@ -116,6 +116,7 @@ def process_entry(settings, entry: dict):
     rule_category = _extract_category(text_input)
 
     result = classify_entry(
+        opencode_bin=settings.opencode_bin,
         model=settings.opencode_model,
         text_input=text_input,
         current_time=now.isoformat(),
