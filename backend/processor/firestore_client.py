@@ -28,6 +28,50 @@ def fetch_unprocessed_entries(db, limit: int):
     return list(query.stream())
 
 
+def fetch_work_entries(db, limit: int = 20):
+    query = db.collection('entries').order_by('createdAt', direction=firestore.Query.DESCENDING).limit(limit * 5)
+    docs = []
+    for doc in query.stream():
+        data = doc.to_dict() or {}
+        if data.get('category') == 'work':
+            docs.append(doc)
+        if len(docs) >= limit:
+            break
+    return docs
+
+
+def create_work_entry(db, text_input: str, added_by_email: str = 'api@local', added_by_uid: str = 'api-local'):
+    payload = {
+        'textInput': text_input,
+        'category': 'work',
+        'priority': 'normal',
+        'processed': False,
+        'dueDate': None,
+        'addedByUid': added_by_uid,
+        'addedByEmail': added_by_email,
+        'createdAt': firestore.SERVER_TIMESTAMP,
+    }
+    ref = db.collection('entries').document()
+    ref.set(payload)
+    return ref
+
+
+def delete_entry(db, doc_id: str):
+    ref = db.collection('entries').document(doc_id)
+    snapshot = ref.get()
+    if not snapshot.exists:
+        return False
+    ref.delete()
+    return True
+
+
+def get_entry(db, doc_id: str):
+    snapshot = db.collection('entries').document(doc_id).get()
+    if not snapshot.exists:
+        return None
+    return {'id': snapshot.id, **(snapshot.to_dict() or {})}
+
+
 def update_processed_entry(db, doc_id: str, payload: dict):
     payload = {
         **payload,

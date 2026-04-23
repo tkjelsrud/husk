@@ -70,6 +70,37 @@ pip install -r backend/requirements.txt
 python -m backend.processor.main --once
 ```
 
+## Work MCP Server
+
+Run a small stdio MCP server for Firestore work items:
+
+```sh
+.venv/bin/python -m backend.mcp_server
+```
+
+Tools exposed:
+
+- `list_work_items`
+- `add_work_item`
+- `delete_work_item`
+
+The MCP server talks directly to Firestore and is separate from the remote
+processing worker.
+
+Example MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "husk-firebase": {
+      "command": "/Users/tkjelsrud/Public/husk/.venv/bin/python",
+      "args": ["-m", "backend.mcp_server"],
+      "cwd": "/Users/tkjelsrud/Public/husk"
+    }
+  }
+}
+```
+
 ## Scheduling
 
 Recommended deployment here: cron every 10 minutes between 06:00 and 22:00.
