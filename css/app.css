@@ -149,6 +149,41 @@ body {
   color: #2b6d39;
 }
 
+.processing-cell {
+  min-width: 240px;
+}
+
+.processing-summary {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #2b2a27;
+}
+
+.processing-meta {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: #6d675d;
+}
+
+.processing-details summary {
+  cursor: pointer;
+  color: #6a5233;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.processing-json {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f7f4ee;
+  color: #403a31;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 576px) {
   .navbar .container {
     align-items: flex-start;

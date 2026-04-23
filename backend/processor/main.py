@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 
 from .config import load_settings
 from .entry_processor import process_entry
@@ -15,7 +16,8 @@ from .firestore_client import (
 
 def run_once():
     settings = load_settings()
-    db = create_client(settings.firebase_service_account_path)
+    os.environ.setdefault('GOOGLE_CLOUD_PROJECT', settings.firebase_project_id)
+    db = create_client(settings.firebase_service_account_path, settings.firebase_project_id)
     seen_ids = set()
     total_processed = 0
 
@@ -30,7 +32,7 @@ def run_once():
             seen_ids.add(doc.id)
             data = doc.to_dict() or {}
             try:
-                payload = process_entry(settings, data)
+                payload = process_entry(settings, data, doc.id)
                 update_processed_entry(db, doc.id, payload)
                 total_processed += 1
                 logging.info('Processed %s', doc.id)

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
+from .calendar_client import sync_calendar_event
 from .model_client import classify_entry
 from .schemas import ENTRY_CATEGORIES, ENTRY_PRIORITIES
 
 
 PROCESSOR_VERSION = 'husk-backend-v1'
+DEFAULT_TIMEZONE = ZoneInfo('Europe/Oslo')
+DEFAULT_DUE_HOUR = 8
 
 CATEGORY_HINTS = {
     'work': [
@@ -107,34 +111,76 @@ HIGH_PRIORITY_HINTS = [
 ]
 
 
-def process_entry(settings, entry: dict):
+def process_entry(settings, entry: dict, entry_id: str | None = None):
     text_input = str(entry.get('textInput', '')).strip()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(DEFAULT_TIMEZONE)
 
     rule_due_date = _extract_due_date(text_input, now)
     rule_priority = _extract_priority(text_input)
     rule_category = _extract_category(text_input)
 
-    result = classify_entry(
+    model_result = classify_entry(
         opencode_bin=settings.opencode_bin,
         model=settings.opencode_model,
         text_input=text_input,
         current_time=now.isoformat(),
     )
 
-    category = _normalize_category(rule_category or result.get('category'))
-    priority = _normalize_priority(rule_priority or result.get('priority'))
-    due_date = rule_due_date or _normalize_due_date(result.get('dueDate'))
+    model_due_date = _normalize_due_date(model_result.get('dueDate'))
+    category = _normalize_category(rule_category or model_result.get('category'))
+    priority = _normalize_priority(rule_priority or model_result.get('priority'))
+    due_date = rule_due_date or model_due_date
 
-    return {
+    payload = {
         'category': category,
         'priority': priority,
         'dueDate': due_date,
-        'processingSummary': str(result.get('summary', '')).strip(),
+        'processingSummary': str(model_result.get('summary', '')).strip(),
         'processorVersion': PROCESSOR_VERSION,
         'lastError': firestore_delete(),
         'lastTriedAt': firestore_delete(),
     }
+
+    calendar_result = {
+        'calendarEventCreated': False,
+        'calendarSyncStatus': 'not_attempted',
+        'calendarSyncTime': due_date.isoformat() if due_date else None,
+    }
+    if entry_id:
+        calendar_result = sync_calendar_event(settings, entry_id, entry, payload)
+        payload.update(calendar_result)
+
+    payload['processingDetails'] = {
+        'processedAtLocal': now.isoformat(),
+        'inputText': text_input,
+        'rules': {
+            'category': rule_category,
+            'priority': rule_priority,
+            'dueDate': rule_due_date.isoformat() if rule_due_date else None,
+        },
+        'modelOutput': {
+            'category': model_result.get('category'),
+            'priority': model_result.get('priority'),
+            'dueDate': model_due_date.isoformat() if model_due_date else model_result.get('dueDate'),
+            'summary': str(model_result.get('summary', '')).strip(),
+        },
+        'final': {
+            'category': category,
+            'priority': priority,
+            'dueDate': due_date.isoformat() if due_date else None,
+            'processingSummary': payload['processingSummary'],
+        },
+        'calendar': {
+            'eligible': category == 'family' and due_date is not None,
+            'status': calendar_result.get('calendarSyncStatus'),
+            'eventCreated': calendar_result.get('calendarEventCreated', False),
+            'eventId': calendar_result.get('calendarEventId'),
+            'calendarId': calendar_result.get('calendarId'),
+            'scheduledTime': calendar_result.get('calendarSyncTime'),
+        },
+    }
+
+    return payload
 
 
 def _normalize_category(value):
@@ -157,8 +203,19 @@ def _normalize_due_date(value):
     if value in (None, '', 'null'):
         return None
     if isinstance(value, datetime):
-        return value
-    return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        return value.astimezone(DEFAULT_TIMEZONE) if value.tzinfo else value.replace(tzinfo=DEFAULT_TIMEZONE)
+
+    raw_value = str(value).strip()
+    if 'T' not in raw_value:
+        return _at_default_time(datetime.fromisoformat(raw_value).date())
+
+    normalized = raw_value.replace('Z', '+00:00')
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        if parsed.time() == time(0, 0):
+            return _at_default_time(parsed.date())
+        return parsed.replace(tzinfo=DEFAULT_TIMEZONE)
+    return parsed.astimezone(DEFAULT_TIMEZONE)
 
 
 def _extract_category(text_input: str):
@@ -213,7 +270,7 @@ def _extract_due_date(text_input: str, now: datetime):
 
 
 def _at_default_time(target_date):
-    return datetime.combine(target_date, time(hour=9, minute=0), tzinfo=timezone.utc)
+    return datetime.combine(target_date, time(hour=DEFAULT_DUE_HOUR, minute=0), tzinfo=DEFAULT_TIMEZONE)
 
 
 def firestore_delete():

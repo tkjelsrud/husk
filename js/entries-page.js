@@ -21,7 +21,7 @@ function hideStatus() {
 
 function renderEntries(entries) {
   if (entries.length === 0) {
-    entriesBody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Ingen ennå.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="8" class="text-muted py-4">Ingen ennå.</td></tr>';
     return;
   }
 
@@ -34,6 +34,7 @@ function renderEntries(entries) {
     const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
     const category = escapeHtml(formatCategory(entry.category));
     const priority = escapeHtml(formatPriority(entry.priority));
+    const processing = renderProcessing(entry);
 
     return `
       <tr>
@@ -43,10 +44,49 @@ function renderEntries(entries) {
         <td>${priority}</td>
         <td><span class="status-badge ${processedClass}">${processedLabel}</span></td>
         <td>${dueDate}</td>
+        <td>${processing}</td>
         <td>${addedBy}</td>
       </tr>
     `;
   }).join('');
+}
+
+function renderProcessing(entry) {
+  const details = entry.processingDetails;
+  const summary = escapeHtml(String(entry.processingSummary || '-'));
+  const calendarStatus = escapeHtml(formatCalendarStatus(entry));
+
+  if (!details) {
+    return `
+      <div class="processing-cell">
+        <div class="processing-summary">${summary}</div>
+        <div class="processing-meta">Kalender: ${calendarStatus}</div>
+      </div>
+    `;
+  }
+
+  const prettyJson = escapeHtml(JSON.stringify(details, null, 2));
+  return `
+    <div class="processing-cell">
+      <div class="processing-summary">${summary}</div>
+      <div class="processing-meta">Kalender: ${calendarStatus}</div>
+      <details class="processing-details mt-2">
+        <summary>Vis detaljer</summary>
+        <pre class="processing-json">${prettyJson}</pre>
+      </details>
+    </div>
+  `;
+}
+
+function formatCalendarStatus(entry) {
+  if (entry.calendarEventCreated) {
+    const status = String(entry.calendarSyncStatus || 'created');
+    const time = formatTimestamp(entry.calendarSyncTime);
+    return `${status} ${time === '-' ? '' : `(${time})`}`.trim();
+  }
+
+  const status = String(entry.calendarSyncStatus || 'nei');
+  return status === 'not_attempted' ? 'nei' : status;
 }
 
 function formatCategory(value) {
@@ -108,7 +148,7 @@ async function loadEntries() {
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
-    entriesBody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="8" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
   } finally {
     refreshButton.disabled = false;
   }

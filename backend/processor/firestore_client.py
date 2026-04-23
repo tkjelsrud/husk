@@ -6,10 +6,16 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 
-def create_client(service_account_path: str):
-    app = firebase_admin.get_app() if firebase_admin._apps else firebase_admin.initialize_app(
-        credentials.Certificate(service_account_path)
-    )
+def create_client(service_account_path: str | None, project_id: str | None = None):
+    if firebase_admin._apps:
+        return firestore.client(app=firebase_admin.get_app())
+
+    options = {'projectId': project_id} if project_id else None
+    if service_account_path:
+        app = firebase_admin.initialize_app(credentials.Certificate(service_account_path), options=options)
+    else:
+        app = firebase_admin.initialize_app(options=options)
+
     return firestore.client(app=app)
 
 
@@ -17,7 +23,6 @@ def fetch_unprocessed_entries(db, limit: int):
     query = (
         db.collection('entries')
         .where('processed', '==', False)
-        .order_by('createdAt')
         .limit(limit)
     )
     return list(query.stream())

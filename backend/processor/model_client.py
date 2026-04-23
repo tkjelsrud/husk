@@ -12,6 +12,7 @@ Return only compact JSON.
 Choose category only from the allowed categories.
 Choose priority only from the allowed priorities.
 If no due date is clearly present, return null.
+If a due date is present but no specific time is given, use 08:00 in Europe/Oslo.
 Detect all allowed categories when possible.
 Work is especially important: prefer category 'work' when the text is clearly work-related.
 Use priority 'high' when the text contains clearly urgent language.
