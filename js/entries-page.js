@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { getEntries } from './db.js';
+import { deleteEntry, getEntries } from './db.js';
 
 const logoutButton = document.getElementById('logout-btn');
 const refreshButton = document.getElementById('refresh-btn');
@@ -21,7 +21,7 @@ function hideStatus() {
 
 function renderEntries(entries) {
   if (entries.length === 0) {
-    entriesBody.innerHTML = '<tr><td colspan="8" class="text-muted py-4">Ingen ennå.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Ingen ennå.</td></tr>';
     return;
   }
 
@@ -46,6 +46,7 @@ function renderEntries(entries) {
         <td>${dueDate}</td>
         <td>${processing}</td>
         <td>${addedBy}</td>
+        <td><button class="delete-entry-link" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">X</button></td>
       </tr>
     `;
   }).join('');
@@ -148,14 +149,37 @@ async function loadEntries() {
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
-    entriesBody.innerHTML = '<tr><td colspan="8" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
+    entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
   } finally {
     refreshButton.disabled = false;
+  }
+}
+
+async function handleDeleteClick(event) {
+  const deleteButton = event.target.closest('[data-entry-id]');
+  if (!deleteButton) return;
+
+  const entryId = deleteButton.dataset.entryId;
+  if (!entryId) return;
+
+  if (!window.confirm('Slette notatet?')) return;
+
+  hideStatus();
+  deleteButton.disabled = true;
+  try {
+    await deleteEntry(entryId);
+    showStatus('success', 'Notatet ble slettet.');
+    await loadEntries();
+  } catch (err) {
+    console.error(err);
+    showStatus('danger', 'Kunne ikke slette notatet.');
+    deleteButton.disabled = false;
   }
 }
 
 requireAuth((user) => {
   userLabel.textContent = user.email || '';
   refreshButton.addEventListener('click', loadEntries);
+  entriesBody.addEventListener('click', handleDeleteClick);
   loadEntries();
 });

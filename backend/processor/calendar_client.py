@@ -71,7 +71,7 @@ def sync_calendar_event(settings, entry_id: str, entry: dict, payload: dict):
 
 
 def _should_sync(payload: dict):
-    return payload.get('category') == 'family' and payload.get('dueDate') is not None
+    return payload.get('category') != 'work' and payload.get('dueDate') is not None
 
 
 def _build_service(settings, token_path: str):

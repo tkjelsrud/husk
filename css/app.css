@@ -184,6 +184,21 @@ body {
   word-break: break-word;
 }
 
+.delete-entry-link {
+  border: 0;
+  background: transparent;
+  color: #a6402f;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+}
+
+.delete-entry-link:hover,
+.delete-entry-link:focus {
+  color: #7c2315;
+}
+
 @media (max-width: 576px) {
   .navbar .container {
     align-items: flex-start;

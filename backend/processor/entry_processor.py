@@ -171,7 +171,7 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
             'processingSummary': payload['processingSummary'],
         },
         'calendar': {
-            'eligible': category == 'family' and due_date is not None,
+            'eligible': category != 'work' and due_date is not None,
             'status': calendar_result.get('calendarSyncStatus'),
             'eventCreated': calendar_result.get('calendarEventCreated', False),
             'eventId': calendar_result.get('calendarEventId'),

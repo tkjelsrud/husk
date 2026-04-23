@@ -2,6 +2,8 @@ import { app } from './firebase-config.js';
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   getFirestore,
   orderBy,
@@ -43,4 +45,8 @@ export async function getEntries() {
   const entryQuery = query(collection(db, 'entries'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(entryQuery);
   return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+export async function deleteEntry(entryId) {
+  return deleteDoc(doc(db, 'entries', entryId));
 }
