@@ -56,9 +56,10 @@ def error_response(request_id, code, message):
     }
 
 
-def handle_initialize(request_id, _params):
+def handle_initialize(request_id, params):
+    client_version = params.get('protocolVersion', '2024-11-05')
     return success_response(request_id, {
-        'protocolVersion': '2024-11-05',
+        'protocolVersion': client_version,
         'serverInfo': SERVER_INFO,
         'capabilities': {
             'tools': {},

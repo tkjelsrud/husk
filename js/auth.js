@@ -1,16 +1,20 @@
 import { app } from './firebase-config.js';
 import {
+  browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
   getRedirectResult,
   onAuthStateChanged,
+  setPersistence,
   signInWithPopup,
   signOut
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
 
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+const authSetup = setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.error('Failed to enable local auth persistence', err);
+});
 
 async function loadRuntimeConfig() {
   try {
@@ -43,10 +47,12 @@ export async function isAuthorizedUser(user) {
 }
 
 export async function finalizeLoginRedirect() {
+  await authSetup;
   return getRedirectResult(auth);
 }
 
 export async function loginWithGoogle() {
+  await authSetup;
   return signInWithPopup(auth, provider);
 }
 
@@ -57,20 +63,22 @@ export function logout(reason = '') {
 }
 
 export function requireAuth(initFn) {
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
+  authSetup.then(() => {
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        redirectToIndex();
+        return;
+      }
+
+      if (!await isAuthorizedUser(user)) {
+        await logout('unauthorized');
+        return;
+      }
+
+      initFn(user);
+    }, (err) => {
+      console.error(err);
       redirectToIndex();
-      return;
-    }
-
-    if (!await isAuthorizedUser(user)) {
-      await logout('unauthorized');
-      return;
-    }
-
-    initFn(user);
-  }, (err) => {
-    console.error(err);
-    redirectToIndex();
     });
+  });
 }

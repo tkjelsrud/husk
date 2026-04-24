@@ -21,8 +21,13 @@ if [ ! -x "$ROOT/.venv/bin/python" ]; then
   exit 0
 fi
 
-if [ -z "${FIREBASE_SERVICE_ACCOUNT_PATH:-}" ] || [ ! -f "$FIREBASE_SERVICE_ACCOUNT_PATH" ]; then
+if [ -n "${FIREBASE_SERVICE_ACCOUNT_PATH:-}" ] && [ ! -f "$FIREBASE_SERVICE_ACCOUNT_PATH" ]; then
   printf '%s firebase service account missing\n' "$(date -Iseconds)" >> "$LOG_DIR/processor.log"
+  exit 0
+fi
+
+if [ -z "${FIREBASE_SERVICE_ACCOUNT_PATH:-}" ] && [ ! -f "$HOME/.config/gcloud/application_default_credentials.json" ]; then
+  printf '%s firebase adc missing\n' "$(date -Iseconds)" >> "$LOG_DIR/processor.log"
   exit 0
 fi
 
