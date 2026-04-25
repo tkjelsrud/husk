@@ -145,21 +145,6 @@ body {
   min-height: 2.25rem;
 }
 
-.entries-table-wrap .table {
-  table-layout: fixed;
-}
-
-.entries-table-wrap .table td,
-.entries-table-wrap .table th {
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
-}
-
-.entry-cell-meta {
-  font-size: 0.82rem;
-  color: #666055;
-}
-
 .entry-text {
   white-space: pre-wrap;
   margin: 0;
@@ -247,6 +232,10 @@ body {
   gap: 0.55rem;
 }
 
+.entries-list-desktop {
+  gap: 0.85rem;
+}
+
 .entry-card {
   border: 1px solid rgba(29, 29, 27, 0.08);
   border-radius: 14px;
@@ -265,6 +254,14 @@ body {
   min-width: 0;
 }
 
+.entry-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
 .entry-card-subline {
   display: flex;
   flex-wrap: wrap;
@@ -272,6 +269,29 @@ body {
   margin-top: 0.2rem;
   color: #6d675d;
   font-size: 0.76rem;
+}
+
+.entry-card-main-desktop {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.entry-card-desktop {
+  padding: 0.95rem 1rem;
+}
+
+.entry-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
+.entry-card-label {
+  color: #7c7569;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .status-dot {
@@ -336,10 +356,21 @@ body {
   margin-top: 0.5rem;
 }
 
+.processing-cell-desktop {
+  margin-top: 0;
+}
+
 .delete-entry-link-mobile {
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+@media (max-width: 767.98px) {
+  .entry-card-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -389,6 +420,11 @@ body {
 
   .entries-toolbar {
     margin-bottom: 0.85rem !important;
+  }
+
+  .entry-card-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .status-badge {

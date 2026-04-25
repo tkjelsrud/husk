@@ -5,7 +5,7 @@ const logoutButton = document.getElementById('logout-btn');
 const refreshButton = document.getElementById('refresh-btn');
 const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
-const entriesBody = document.getElementById('entries-body');
+const entriesDesktopList = document.getElementById('entries-desktop-list');
 const entriesList = document.getElementById('entries-list');
 
 logoutButton.addEventListener('click', () => logout());
@@ -22,38 +22,68 @@ function hideStatus() {
 
 function renderEntries(entries) {
   if (entries.length === 0) {
-    entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Ingen ennå.</td></tr>';
+    entriesDesktopList.innerHTML = '<div class="text-muted py-3">Ingen ennå.</div>';
     entriesList.innerHTML = '<div class="text-muted py-3">Ingen ennå.</div>';
     return;
   }
 
-  entriesBody.innerHTML = entries.map(renderDesktopEntry).join('');
+  entriesDesktopList.innerHTML = entries.map(renderDesktopEntry).join('');
   entriesList.innerHTML = entries.map(renderMobileEntry).join('');
 }
 
 function renderDesktopEntry(entry) {
-  const processedLabel = entry.processed ? 'Ja' : 'Nei';
+  const processedLabel = entry.processed ? 'Ferdig' : 'Apen';
   const processedClass = entry.processed ? 'done' : 'pending';
   const text = escapeHtml(String(entry.textInput || ''));
+  const entryId = escapeHtml(String(entry.id || ''));
+  const summary = escapeHtml(String(entry.processingSummary || 'Ingen prosessering enda.'));
+  const calendarStatus = escapeHtml(formatCalendarStatus(entry));
   const addedBy = escapeHtml(String(entry.addedByEmail || ''));
   const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
   const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
   const category = escapeHtml(formatCategory(entry.category));
   const priority = escapeHtml(formatPriority(entry.priority));
-  const processing = renderProcessing(entry);
+  const details = entry.processingDetails ? escapeHtml(JSON.stringify(entry.processingDetails, null, 2)) : '';
+  const detailsSection = entry.processingDetails ? `
+    <details class="entry-extra-details">
+      <summary>Detaljer</summary>
+      <pre class="processing-json">${details}</pre>
+    </details>
+  ` : '';
 
   return `
-    <tr>
-      <td class="entry-cell-meta">${createdAt}</td>
-      <td><pre class="entry-text">${text}</pre></td>
-      <td class="entry-cell-meta">${category}</td>
-      <td class="entry-cell-meta">${priority}</td>
-      <td><span class="status-badge ${processedClass}">${processedLabel}</span></td>
-      <td class="entry-cell-meta">${dueDate}</td>
-      <td>${processing}</td>
-      <td class="entry-cell-meta">${addedBy}</td>
-      <td><button class="delete-entry-link" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">X</button></td>
-    </tr>
+    <article class="entry-card entry-card-desktop ${processedClass}">
+      <div class="entry-card-main entry-card-main-desktop">
+        <span class="status-dot ${processedClass}" aria-hidden="true"></span>
+        <div class="entry-card-content">
+          <div class="entry-card-header">
+            <div class="entry-card-subline">
+              <span>${createdAt}</span>
+              <span>${dueDate === '-' ? 'Ingen frist' : `Frist ${dueDate}`}</span>
+            </div>
+            <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${entryId}" aria-label="Slett">Slett</button>
+          </div>
+          <pre class="entry-text">${text}</pre>
+          <div class="entry-chip-row">
+            <span class="status-badge ${processedClass}">${processedLabel}</span>
+            <span class="entry-chip">${category}</span>
+            <span class="entry-chip">${priority}</span>
+          </div>
+          <div class="entry-card-grid">
+            <div>
+              <div class="entry-card-label">Lagt til av</div>
+              <div class="entry-extra-meta mt-1">${addedBy || '-'}</div>
+            </div>
+            <div class="processing-cell processing-cell-desktop">
+              <div class="entry-card-label">Prosessering</div>
+              <div class="processing-summary mt-1">${summary}</div>
+              <div class="processing-meta">Kalender: ${calendarStatus}</div>
+              ${detailsSection}
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
   `;
 }
 
@@ -104,33 +134,6 @@ function renderMobileEntry(entry) {
         </div>
       </details>
     </article>
-  `;
-}
-
-function renderProcessing(entry) {
-  const details = entry.processingDetails;
-  const summary = escapeHtml(String(entry.processingSummary || '-'));
-  const calendarStatus = escapeHtml(formatCalendarStatus(entry));
-
-  if (!details) {
-    return `
-      <div class="processing-cell">
-        <div class="processing-summary">${summary}</div>
-        <div class="processing-meta">Kalender: ${calendarStatus}</div>
-      </div>
-    `;
-  }
-
-  const prettyJson = escapeHtml(JSON.stringify(details, null, 2));
-  return `
-    <div class="processing-cell">
-      <div class="processing-summary">${summary}</div>
-      <div class="processing-meta">Kalender: ${calendarStatus}</div>
-      <details class="processing-details mt-2">
-        <summary>Vis detaljer</summary>
-        <pre class="processing-json">${prettyJson}</pre>
-      </details>
-    </div>
   `;
 }
 
@@ -206,7 +209,7 @@ async function loadEntries() {
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
-    entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
+    entriesDesktopList.innerHTML = '<div class="text-muted py-3">Kunne ikke laste listen.</div>';
     entriesList.innerHTML = '<div class="text-muted py-3">Kunne ikke laste listen.</div>';
   } finally {
     refreshButton.disabled = false;

@@ -33,27 +33,8 @@
 
         <div id="status-msg" class="alert d-none" role="alert"></div>
 
-        <div class="table-responsive entries-table-wrap d-none d-md-block">
-          <table class="table align-middle mb-0">
-            <thead>
-              <tr>
-                <th scope="col">Opprettet</th>
-                <th scope="col">Tekst</th>
-                <th scope="col">Kategori</th>
-                <th scope="col">Prioritet</th>
-                <th scope="col">Behandlet</th>
-                <th scope="col">Frist</th>
-                <th scope="col">Prosessering</th>
-                <th scope="col">Lagt til av</th>
-                <th scope="col">Slett</th>
-              </tr>
-            </thead>
-            <tbody id="entries-body">
-              <tr>
-                <td colspan="9" class="text-muted py-4">Laster...</td>
-              </tr>
-            </tbody>
-          </table>
+        <div id="entries-desktop-list" class="entries-list entries-list-desktop d-none d-md-grid" aria-live="polite">
+          <div class="text-muted py-3">Laster...</div>
         </div>
 
         <div id="entries-list" class="entries-list d-md-none" aria-live="polite"></div>
