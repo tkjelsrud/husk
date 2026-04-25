@@ -68,6 +68,7 @@ Allowed categories:
 - `houseproj`
 - `family`
 - `general`
+- `huskmcp`
 
 Allowed priorities:
 

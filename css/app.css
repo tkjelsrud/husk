@@ -8,6 +8,10 @@ body {
   background: #1d1d1b;
 }
 
+.app-nav .container {
+  min-height: 3.75rem;
+}
+
 .navbar-brand {
   color: #fff !important;
   font-weight: 700;
@@ -34,6 +38,17 @@ body {
 
 .app-nav-links {
   flex-direction: row;
+  gap: 0.35rem;
+}
+
+.app-nav-compact .navbar-brand {
+  font-size: 0.92rem;
+  letter-spacing: 0.12em;
+}
+
+.app-nav-compact .nav-link,
+.app-nav-compact .btn {
+  font-size: 0.88rem;
 }
 
 .login-shell {
@@ -122,10 +137,38 @@ body {
   text-transform: uppercase;
 }
 
+.entries-page .card {
+  border-radius: 16px;
+}
+
+.entries-toolbar {
+  min-height: 2.25rem;
+}
+
+.entries-table-wrap .table {
+  table-layout: fixed;
+}
+
+.entries-table-wrap .table td,
+.entries-table-wrap .table th {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.entry-cell-meta {
+  font-size: 0.82rem;
+  color: #666055;
+}
+
 .entry-text {
   white-space: pre-wrap;
   margin: 0;
   font-family: inherit;
+  line-height: 1.35;
+}
+
+.entry-text-mobile {
+  font-size: 0.98rem;
 }
 
 .status-badge {
@@ -150,7 +193,7 @@ body {
 }
 
 .processing-cell {
-  min-width: 240px;
+  min-width: 200px;
 }
 
 .processing-summary {
@@ -199,23 +242,157 @@ body {
   color: #7c2315;
 }
 
+.entries-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.entry-card {
+  border: 1px solid rgba(29, 29, 27, 0.08);
+  border-radius: 14px;
+  background: #fbfaf7;
+  padding: 0.75rem 0.85rem;
+}
+
+.entry-card-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.entry-card-content {
+  min-width: 0;
+}
+
+.entry-card-subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.2rem;
+  color: #6d675d;
+  font-size: 0.76rem;
+}
+
+.status-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  margin-top: 0.35rem;
+}
+
+.status-dot.pending {
+  background: #d39b46;
+}
+
+.status-dot.done {
+  background: #4f8f5d;
+}
+
+.entry-extra {
+  margin-top: 0.45rem;
+}
+
+.entry-extra summary,
+.entry-extra-details summary {
+  cursor: pointer;
+  list-style: none;
+  color: #6a5233;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.entry-extra summary::-webkit-details-marker,
+.entry-extra-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.entry-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.entry-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #efe7d9;
+  color: #6a5233;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.entry-extra-meta {
+  margin-top: 0.45rem;
+  color: #6d675d;
+  font-size: 0.76rem;
+}
+
+.processing-cell-mobile {
+  min-width: 0;
+  margin-top: 0.5rem;
+}
+
+.delete-entry-link-mobile {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 576px) {
+  .app-nav .container {
+    min-height: auto;
+    align-items: center;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
   .navbar .container {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .navbar-nav {
-    width: 100%;
-    margin-top: 0.75rem;
+    width: auto;
+    margin-top: 0;
   }
 
   .app-nav-links {
-    flex-direction: column;
-    align-items: flex-start !important;
+    flex-direction: row;
+    align-items: center !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0.15rem;
   }
 
   .nav-user {
-    padding: 0.5rem 0;
-    max-width: 100%;
+    display: none;
+  }
+
+  .app-nav-compact .nav-link {
+    padding: 0.15rem 0.35rem;
+  }
+
+  .app-nav-compact .btn {
+    padding: 0.2rem 0.45rem;
+  }
+
+  .entries-page {
+    padding-top: 0.75rem !important;
+  }
+
+  .entries-page .card {
+    border-radius: 14px;
+  }
+
+  .entries-toolbar {
+    margin-bottom: 0.85rem !important;
+  }
+
+  .status-badge {
+    font-size: 0.68rem;
+    padding: 0.18rem 0.45rem;
   }
 }

@@ -82,7 +82,13 @@ Tools exposed:
 
 - `list_work_items`
 - `add_work_item`
+- `edit_work_item`
 - `delete_work_item`
+
+`list_work_items` still defaults to category `work`, but now accepts an explicit
+`category` override, including `all`, when you want non-work entries.
+
+Allowed entry categories also include `huskmcp` for Husk MCP ideas.
 
 The MCP server talks directly to Firestore and is separate from the remote
 processing worker.

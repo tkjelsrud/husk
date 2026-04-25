@@ -6,6 +6,7 @@ const refreshButton = document.getElementById('refresh-btn');
 const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
 const entriesBody = document.getElementById('entries-body');
+const entriesList = document.getElementById('entries-list');
 
 logoutButton.addEventListener('click', () => logout());
 
@@ -22,34 +23,88 @@ function hideStatus() {
 function renderEntries(entries) {
   if (entries.length === 0) {
     entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Ingen ennå.</td></tr>';
+    entriesList.innerHTML = '<div class="text-muted py-3">Ingen ennå.</div>';
     return;
   }
 
-  entriesBody.innerHTML = entries.map((entry) => {
-    const processedLabel = entry.processed ? 'Ja' : 'Nei';
-    const processedClass = entry.processed ? 'done' : 'pending';
-    const text = escapeHtml(String(entry.textInput || ''));
-    const addedBy = escapeHtml(String(entry.addedByEmail || ''));
-    const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
-    const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
-    const category = escapeHtml(formatCategory(entry.category));
-    const priority = escapeHtml(formatPriority(entry.priority));
-    const processing = renderProcessing(entry);
+  entriesBody.innerHTML = entries.map(renderDesktopEntry).join('');
+  entriesList.innerHTML = entries.map(renderMobileEntry).join('');
+}
 
-    return `
-      <tr>
-        <td>${createdAt}</td>
-        <td><pre class="entry-text">${text}</pre></td>
-        <td>${category}</td>
-        <td>${priority}</td>
-        <td><span class="status-badge ${processedClass}">${processedLabel}</span></td>
-        <td>${dueDate}</td>
-        <td>${processing}</td>
-        <td>${addedBy}</td>
-        <td><button class="delete-entry-link" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">X</button></td>
-      </tr>
-    `;
-  }).join('');
+function renderDesktopEntry(entry) {
+  const processedLabel = entry.processed ? 'Ja' : 'Nei';
+  const processedClass = entry.processed ? 'done' : 'pending';
+  const text = escapeHtml(String(entry.textInput || ''));
+  const addedBy = escapeHtml(String(entry.addedByEmail || ''));
+  const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
+  const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
+  const category = escapeHtml(formatCategory(entry.category));
+  const priority = escapeHtml(formatPriority(entry.priority));
+  const processing = renderProcessing(entry);
+
+  return `
+    <tr>
+      <td class="entry-cell-meta">${createdAt}</td>
+      <td><pre class="entry-text">${text}</pre></td>
+      <td class="entry-cell-meta">${category}</td>
+      <td class="entry-cell-meta">${priority}</td>
+      <td><span class="status-badge ${processedClass}">${processedLabel}</span></td>
+      <td class="entry-cell-meta">${dueDate}</td>
+      <td>${processing}</td>
+      <td class="entry-cell-meta">${addedBy}</td>
+      <td><button class="delete-entry-link" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">X</button></td>
+    </tr>
+  `;
+}
+
+function renderMobileEntry(entry) {
+  const processedLabel = entry.processed ? 'Ferdig' : 'Apen';
+  const processedClass = entry.processed ? 'done' : 'pending';
+  const text = escapeHtml(String(entry.textInput || ''));
+  const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
+  const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
+  const category = escapeHtml(formatCategory(entry.category));
+  const priority = escapeHtml(formatPriority(entry.priority));
+  const addedBy = escapeHtml(String(entry.addedByEmail || '-'));
+  const summary = escapeHtml(String(entry.processingSummary || 'Ingen prosessering enda.'));
+  const calendarStatus = escapeHtml(formatCalendarStatus(entry));
+  const details = entry.processingDetails ? escapeHtml(JSON.stringify(entry.processingDetails, null, 2)) : '';
+  const detailsSection = entry.processingDetails ? `
+    <details class="entry-extra-details">
+      <summary>Detaljer</summary>
+      <pre class="processing-json">${details}</pre>
+    </details>
+  ` : '';
+
+  return `
+    <article class="entry-card ${processedClass}">
+      <div class="entry-card-main">
+        <span class="status-dot ${processedClass}" aria-hidden="true"></span>
+        <div class="entry-card-content">
+          <pre class="entry-text entry-text-mobile">${text}</pre>
+          <div class="entry-card-subline">
+            <span>${createdAt}</span>
+            <span>${dueDate === '-' ? 'Ingen frist' : `Frist ${dueDate}`}</span>
+          </div>
+        </div>
+        <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">Slett</button>
+      </div>
+      <details class="entry-extra">
+        <summary>Mer</summary>
+        <div class="entry-chip-row">
+          <span class="status-badge ${processedClass}">${processedLabel}</span>
+          <span class="entry-chip">${category}</span>
+          <span class="entry-chip">${priority}</span>
+        </div>
+        <div class="entry-extra-meta">Lagt til av ${addedBy}</div>
+        <div class="processing-cell processing-cell-mobile">
+          <div class="processing-summary">${summary}</div>
+          <div class="processing-meta">Kalender: ${calendarStatus}</div>
+          ${detailsSection}
+        </div>
+      </details>
+    </article>
+  `;
 }
 
 function renderProcessing(entry) {
@@ -98,7 +153,9 @@ function formatCategory(value) {
     creative: 'Kreativt',
     houseproj: 'Houseproj',
     family: 'Familie',
-    general: 'Generelt'
+    general: 'Generelt',
+    'husk mcp': 'Husk MCP',
+    huskmcp: 'Husk MCP'
   };
 
   return labels[category] || category;
@@ -150,6 +207,7 @@ async function loadEntries() {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
     entriesBody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">Kunne ikke laste listen.</td></tr>';
+    entriesList.innerHTML = '<div class="text-muted py-3">Kunne ikke laste listen.</div>';
   } finally {
     refreshButton.disabled = false;
   }
@@ -180,6 +238,6 @@ async function handleDeleteClick(event) {
 requireAuth((user) => {
   userLabel.textContent = user.email || '';
   refreshButton.addEventListener('click', loadEntries);
-  entriesBody.addEventListener('click', handleDeleteClick);
+  document.addEventListener('click', handleDeleteClick);
   loadEntries();
 });

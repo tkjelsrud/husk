@@ -5,6 +5,7 @@ ENTRY_CATEGORIES = [
     'houseproj',
     'family',
     'general',
+    'huskmcp',
 ]
 
 ENTRY_PRIORITIES = [

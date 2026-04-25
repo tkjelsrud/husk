@@ -35,3 +35,7 @@ test('validateCategory rejects invalid category', () => {
 test('validateCategory accepts allowed category', () => {
   assert.deepEqual(validateCategory('unknown', ['unknown', 'work']), { ok: true });
 });
+
+test('validateCategory accepts huskmcp category when allowed', () => {
+  assert.deepEqual(validateCategory('huskmcp', ['unknown', 'huskmcp']), { ok: true });
+});

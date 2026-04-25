@@ -5,13 +5,16 @@ import os
 import sys
 
 from .processor.config import load_settings
-from .processor.firestore_client import create_client, create_work_entry, delete_entry, fetch_work_entries, get_entry
+from .processor.firestore_client import create_client, create_entry, delete_entry, fetch_entries, get_entry, update_entry
+from .processor.schemas import ENTRY_CATEGORIES, ENTRY_PRIORITIES
 
 
 SERVER_INFO = {
     'name': 'husk-firebase',
     'version': '0.1.0',
 }
+
+LIST_ENTRY_CATEGORIES = ['all', *ENTRY_CATEGORIES]
 
 
 def get_db():
@@ -35,6 +38,26 @@ def serialize_entry(entry: dict):
         'createdAt': maybe_iso(entry.get('createdAt')),
         'processingSummary': entry.get('processingSummary'),
     }
+
+
+def normalize_category(value, *, allow_all: bool = False, default: str = 'work'):
+    category = str(value or default).strip().lower()
+    if category == 'jobb':
+        category = 'work'
+    if category == 'husk mcp':
+        category = 'huskmcp'
+
+    allowed_categories = LIST_ENTRY_CATEGORIES if allow_all else ENTRY_CATEGORIES
+    if category not in allowed_categories:
+        return None
+    return category
+
+
+def normalize_priority(value, default: str = 'normal'):
+    priority = str(value or default).strip().lower()
+    if priority not in ENTRY_PRIORITIES:
+        return None
+    return priority
 
 
 def success_response(request_id, result):
@@ -72,7 +95,7 @@ def handle_tools_list(request_id):
         'tools': [
             {
                 'name': 'list_work_items',
-                'description': 'List recent work entries from Firestore.',
+                'description': 'List recent Firestore entries. Defaults to work items unless a category is specified.',
                 'inputSchema': {
                     'type': 'object',
                     'properties': {
@@ -81,17 +104,32 @@ def handle_tools_list(request_id):
                             'minimum': 1,
                             'maximum': 100,
                             'default': 20,
-                        }
+                        },
+                        'category': {
+                            'type': 'string',
+                            'enum': LIST_ENTRY_CATEGORIES,
+                            'default': 'work',
+                        },
                     },
                 },
             },
             {
                 'name': 'add_work_item',
-                'description': 'Add a new work entry to Firestore.',
+                'description': 'Add a new Firestore entry. Defaults to a work item unless a category is specified.',
                 'inputSchema': {
                     'type': 'object',
                     'properties': {
                         'textInput': {'type': 'string'},
+                        'category': {
+                            'type': 'string',
+                            'enum': ENTRY_CATEGORIES,
+                            'default': 'work',
+                        },
+                        'priority': {
+                            'type': 'string',
+                            'enum': ENTRY_PRIORITIES,
+                            'default': 'normal',
+                        },
                         'addedByEmail': {'type': 'string'},
                         'addedByUid': {'type': 'string'},
                     },
@@ -99,8 +137,28 @@ def handle_tools_list(request_id):
                 },
             },
             {
+                'name': 'edit_work_item',
+                'description': 'Edit an existing Firestore entry by id, regardless of category.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                        'textInput': {'type': 'string'},
+                        'category': {
+                            'type': 'string',
+                            'enum': ENTRY_CATEGORIES,
+                        },
+                        'priority': {
+                            'type': 'string',
+                            'enum': ENTRY_PRIORITIES,
+                        },
+                    },
+                    'required': ['id'],
+                },
+            },
+            {
                 'name': 'delete_work_item',
-                'description': 'Delete a work entry by Firestore document id.',
+                'description': 'Delete a Firestore entry by document id, regardless of category.',
                 'inputSchema': {
                     'type': 'object',
                     'properties': {
@@ -120,13 +178,18 @@ def handle_tools_call(request_id, params):
 
     if tool_name == 'list_work_items':
         limit = int(arguments.get('limit', 20))
-        docs = fetch_work_entries(db, limit=max(1, min(limit, 100)))
+        category = normalize_category(arguments.get('category'), allow_all=True)
+        if category is None:
+            allowed = ', '.join(LIST_ENTRY_CATEGORIES)
+            return error_response(request_id, -32602, f'category must be one of: {allowed}')
+
+        docs = fetch_entries(db, limit=max(1, min(limit, 100)), category=category)
         items = [serialize_entry({'id': doc.id, **(doc.to_dict() or {})}) for doc in docs]
         return success_response(request_id, {
             'content': [
                 {
                     'type': 'text',
-                    'text': json.dumps({'items': items}, ensure_ascii=True),
+                    'text': json.dumps({'items': items, 'category': category}, ensure_ascii=True),
                 }
             ]
         })
@@ -138,10 +201,72 @@ def handle_tools_call(request_id, params):
         if len(text_input) > 1500:
             return error_response(request_id, -32602, 'textInput must be 1500 characters or less')
 
+        category = normalize_category(arguments.get('category'))
+        if category is None:
+            allowed = ', '.join(ENTRY_CATEGORIES)
+            return error_response(request_id, -32602, f'category must be one of: {allowed}')
+
+        priority = normalize_priority(arguments.get('priority'))
+        if priority is None:
+            allowed = ', '.join(ENTRY_PRIORITIES)
+            return error_response(request_id, -32602, f'priority must be one of: {allowed}')
+
         added_by_email = str(arguments.get('addedByEmail', 'mcp@local')).strip() or 'mcp@local'
         added_by_uid = str(arguments.get('addedByUid', 'mcp-local')).strip() or 'mcp-local'
-        ref = create_work_entry(db, text_input, added_by_email=added_by_email, added_by_uid=added_by_uid)
+        ref = create_entry(
+            db,
+            text_input,
+            category=category,
+            priority=priority,
+            added_by_email=added_by_email,
+            added_by_uid=added_by_uid,
+        )
         entry = get_entry(db, ref.id)
+        return success_response(request_id, {
+            'content': [
+                {
+                    'type': 'text',
+                    'text': json.dumps({'item': serialize_entry(entry)}, ensure_ascii=True),
+                }
+            ]
+        })
+
+    if tool_name == 'edit_work_item':
+        entry_id = str(arguments.get('id', '')).strip()
+        if not entry_id:
+            return error_response(request_id, -32602, 'id is required')
+
+        updates = {}
+
+        if 'textInput' in arguments:
+            text_input = str(arguments.get('textInput', '')).strip()
+            if not text_input:
+                return error_response(request_id, -32602, 'textInput must be a non-empty string when provided')
+            if len(text_input) > 1500:
+                return error_response(request_id, -32602, 'textInput must be 1500 characters or less')
+            updates['textInput'] = text_input
+
+        if 'category' in arguments:
+            category = normalize_category(arguments.get('category'))
+            if category is None:
+                allowed = ', '.join(ENTRY_CATEGORIES)
+                return error_response(request_id, -32602, f'category must be one of: {allowed}')
+            updates['category'] = category
+
+        if 'priority' in arguments:
+            priority = normalize_priority(arguments.get('priority'))
+            if priority is None:
+                allowed = ', '.join(ENTRY_PRIORITIES)
+                return error_response(request_id, -32602, f'priority must be one of: {allowed}')
+            updates['priority'] = priority
+
+        if not updates:
+            return error_response(request_id, -32602, 'at least one of textInput, category, or priority is required')
+
+        entry = update_entry(db, entry_id, updates)
+        if not entry:
+            return error_response(request_id, -32004, 'item not found')
+
         return success_response(request_id, {
             'content': [
                 {
@@ -157,7 +282,7 @@ def handle_tools_call(request_id, params):
             return error_response(request_id, -32602, 'id is required')
         deleted = delete_entry(db, entry_id)
         if not deleted:
-            return error_response(request_id, -32004, 'work item not found')
+            return error_response(request_id, -32004, 'item not found')
         return success_response(request_id, {
             'content': [
                 {

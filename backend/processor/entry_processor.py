@@ -103,6 +103,11 @@ CATEGORY_HINTS = {
         'todo',
         'to do',
     ],
+    'huskmcp': [
+        'husk mcp',
+        'huskmcp',
+        'mcp',
+    ],
 }
 
 HIGH_PRIORITY_HINTS = [
@@ -187,6 +192,8 @@ def _normalize_category(value):
     category = str(value or 'unknown').strip().lower()
     if category == 'jobb':
         category = 'work'
+    if category == 'husk mcp':
+        category = 'huskmcp'
     if category not in ENTRY_CATEGORIES:
         return 'unknown'
     return category
@@ -225,7 +232,7 @@ def _extract_category(text_input: str):
     if any(hint in lowered for hint in CATEGORY_HINTS['work']):
         return 'work'
 
-    for category in ('creative', 'houseproj', 'family', 'general'):
+    for category in ('creative', 'houseproj', 'family', 'general', 'huskmcp'):
         if any(hint in lowered for hint in CATEGORY_HINTS[category]):
             return category
 

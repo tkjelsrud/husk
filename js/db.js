@@ -19,7 +19,8 @@ export const ENTRY_CATEGORIES = [
   'creative',
   'houseproj',
   'family',
-  'general'
+  'general',
+  'huskmcp'
 ];
 
 export const ENTRY_PRIORITIES = [
