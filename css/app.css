@@ -279,21 +279,6 @@ body {
   padding: 0.95rem 1rem;
 }
 
-.entry-card-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
-  gap: 1rem;
-  margin-top: 0.8rem;
-}
-
-.entry-card-label {
-  color: #7c7569;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .status-dot {
   width: 0.65rem;
   height: 0.65rem;
@@ -311,6 +296,10 @@ body {
 
 .entry-extra {
   margin-top: 0.45rem;
+}
+
+.entry-extra-desktop {
+  margin-top: 0.55rem;
 }
 
 .entry-extra summary,
@@ -364,13 +353,6 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-@media (max-width: 767.98px) {
-  .entry-card-grid {
-    grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
 }
 
 @media (max-width: 576px) {

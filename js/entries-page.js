@@ -32,7 +32,7 @@ function renderEntries(entries) {
 }
 
 function renderDesktopEntry(entry) {
-  const processedLabel = entry.processed ? 'Ferdig' : 'Apen';
+  const processedLabel = entry.processed ? 'Prosessert' : 'Ikke prosessert';
   const processedClass = entry.processed ? 'done' : 'pending';
   const text = escapeHtml(String(entry.textInput || ''));
   const entryId = escapeHtml(String(entry.id || ''));
@@ -64,23 +64,20 @@ function renderDesktopEntry(entry) {
             <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${entryId}" aria-label="Slett">Slett</button>
           </div>
           <pre class="entry-text">${text}</pre>
-          <div class="entry-chip-row">
-            <span class="status-badge ${processedClass}">${processedLabel}</span>
-            <span class="entry-chip">${category}</span>
-            <span class="entry-chip">${priority}</span>
-          </div>
-          <div class="entry-card-grid">
-            <div>
-              <div class="entry-card-label">Lagt til av</div>
-              <div class="entry-extra-meta mt-1">${addedBy || '-'}</div>
+          <details class="entry-extra entry-extra-desktop">
+            <summary>Mer</summary>
+            <div class="entry-chip-row">
+              <span class="status-badge ${processedClass}">${processedLabel}</span>
+              <span class="entry-chip">${category}</span>
+              <span class="entry-chip">${priority}</span>
             </div>
-            <div class="processing-cell processing-cell-desktop">
-              <div class="entry-card-label">Prosessering</div>
-              <div class="processing-summary mt-1">${summary}</div>
+            <div class="entry-extra-meta">Lagt til av ${addedBy || '-'}</div>
+            <div class="processing-cell processing-cell-mobile">
+              <div class="processing-summary">${summary}</div>
               <div class="processing-meta">Kalender: ${calendarStatus}</div>
               ${detailsSection}
             </div>
-          </div>
+          </details>
         </div>
       </div>
     </article>
@@ -88,7 +85,7 @@ function renderDesktopEntry(entry) {
 }
 
 function renderMobileEntry(entry) {
-  const processedLabel = entry.processed ? 'Ferdig' : 'Apen';
+  const processedLabel = entry.processed ? 'Prosessert' : 'Ikke prosessert';
   const processedClass = entry.processed ? 'done' : 'pending';
   const text = escapeHtml(String(entry.textInput || ''));
   const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
