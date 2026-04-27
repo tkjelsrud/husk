@@ -28,7 +28,11 @@
             <p class="eyebrow mb-1 d-none d-sm-block">Oversikt</p>
             <h1 class="h5 mb-0">Liste</h1>
           </div>
-          <button id="refresh-btn" class="btn btn-outline-secondary btn-sm" type="button">Oppdater</button>
+          <div class="entries-toolbar-actions d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <div id="entries-filter-summary" class="entries-filter-summary text-muted small">Skjuler gamle og forfalte notater</div>
+            <button id="toggle-hidden-btn" class="btn btn-link btn-sm entries-toggle-btn" type="button">Vis alle</button>
+            <button id="refresh-btn" class="btn btn-outline-secondary btn-sm" type="button">Oppdater</button>
+          </div>
         </div>
 
         <div id="status-msg" class="alert d-none" role="alert"></div>

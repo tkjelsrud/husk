@@ -145,6 +145,23 @@ body {
   min-height: 2.25rem;
 }
 
+.entries-filter-summary {
+  white-space: nowrap;
+}
+
+.entries-toggle-btn {
+  padding: 0;
+  color: #6a5233;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entries-toggle-btn:hover,
+.entries-toggle-btn:focus {
+  color: #543f26;
+  text-decoration: underline;
+}
+
 .entry-text {
   white-space: pre-wrap;
   margin: 0;
@@ -402,6 +419,11 @@ body {
 
   .entries-toolbar {
     margin-bottom: 0.85rem !important;
+  }
+
+  .entries-filter-summary {
+    white-space: normal;
+    text-align: right;
   }
 
   .entry-card-header {

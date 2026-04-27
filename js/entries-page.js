@@ -1,12 +1,18 @@
 import { logout, requireAuth } from './auth.js';
 import { deleteEntry, getEntries } from './db.js';
+import { shouldHideEntry } from './lib/entries-filter.js';
 
 const logoutButton = document.getElementById('logout-btn');
 const refreshButton = document.getElementById('refresh-btn');
+const toggleHiddenButton = document.getElementById('toggle-hidden-btn');
+const filterSummary = document.getElementById('entries-filter-summary');
 const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
 const entriesDesktopList = document.getElementById('entries-desktop-list');
 const entriesList = document.getElementById('entries-list');
+
+let showAllEntries = false;
+let currentEntries = [];
 
 logoutButton.addEventListener('click', () => logout());
 
@@ -21,14 +27,27 @@ function hideStatus() {
 }
 
 function renderEntries(entries) {
+  const visibleEntries = showAllEntries ? entries : entries.filter((entry) => !shouldHideEntry(entry));
+  const hiddenCount = entries.length - visibleEntries.length;
+
+  updateFilterSummary(hiddenCount);
+
   if (entries.length === 0) {
     entriesDesktopList.innerHTML = '<div class="text-muted py-3">Ingen ennå.</div>';
     entriesList.innerHTML = '<div class="text-muted py-3">Ingen ennå.</div>';
     return;
   }
 
-  entriesDesktopList.innerHTML = entries.map(renderDesktopEntry).join('');
-  entriesList.innerHTML = entries.map(renderMobileEntry).join('');
+  if (visibleEntries.length === 0) {
+    entriesDesktopList.innerHTML = showAllEntries
+      ? '<div class="text-muted py-3">Ingen ennå.</div>'
+      : '<div class="text-muted py-3">Alt er skjult. Velg "Vis alle" for å se eldre eller forfalte notater.</div>';
+    entriesList.innerHTML = entriesDesktopList.innerHTML;
+    return;
+  }
+
+  entriesDesktopList.innerHTML = visibleEntries.map(renderDesktopEntry).join('');
+  entriesList.innerHTML = visibleEntries.map(renderMobileEntry).join('');
 }
 
 function renderDesktopEntry(entry) {
@@ -187,6 +206,21 @@ function formatTimestamp(value) {
   }).format(date);
 }
 
+function updateFilterSummary(hiddenCount) {
+  if (showAllEntries) {
+    filterSummary.textContent = hiddenCount > 0
+      ? `Viser alle notater, inkludert ${hiddenCount} skjulte`
+      : 'Viser alle notater';
+    toggleHiddenButton.textContent = 'Skjul noen';
+    return;
+  }
+
+  filterSummary.textContent = hiddenCount > 0
+    ? `Skjuler ${hiddenCount} gamle eller forfalte notater`
+    : 'Skjuler gamle og forfalte notater';
+  toggleHiddenButton.textContent = 'Vis alle';
+}
+
 function escapeHtml(value) {
   return value
     .replaceAll('&', '&amp;')
@@ -201,8 +235,8 @@ async function loadEntries() {
   refreshButton.disabled = true;
 
   try {
-    const entries = await getEntries();
-    renderEntries(entries);
+    currentEntries = await getEntries();
+    renderEntries(currentEntries);
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
@@ -235,9 +269,15 @@ async function handleDeleteClick(event) {
   }
 }
 
+function handleToggleHidden() {
+  showAllEntries = !showAllEntries;
+  renderEntries(currentEntries);
+}
+
 requireAuth((user) => {
   userLabel.textContent = user.email || '';
   refreshButton.addEventListener('click', loadEntries);
+  toggleHiddenButton.addEventListener('click', handleToggleHidden);
   document.addEventListener('click', handleDeleteClick);
   loadEntries();
 });
