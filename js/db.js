@@ -8,7 +8,8 @@ import {
   getFirestore,
   orderBy,
   query,
-  serverTimestamp
+  serverTimestamp,
+  updateDoc
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 const db = getFirestore(app);
@@ -50,4 +51,8 @@ export async function getEntries() {
 
 export async function deleteEntry(entryId) {
   return deleteDoc(doc(db, 'entries', entryId));
+}
+
+export async function updateEntry(entryId, { textInput, category }) {
+  return updateDoc(doc(db, 'entries', entryId), { textInput, category });
 }

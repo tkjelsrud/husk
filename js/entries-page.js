@@ -1,6 +1,7 @@
 import { logout, requireAuth } from './auth.js';
 import { deleteEntry, getEntries } from './db.js';
 import { shouldHideEntry } from './lib/entries-filter.js';
+import { openEditModal } from './edit-modal.js';
 
 const logoutButton = document.getElementById('logout-btn');
 const refreshButton = document.getElementById('refresh-btn');
@@ -71,7 +72,10 @@ function renderDesktopEntry(entry) {
   ` : '';
 
   return `
-    <article class="entry-card entry-card-desktop ${processedClass}">
+    <article class="entry-card entry-card-desktop ${processedClass}"
+      data-edit-entry-id="${entryId}"
+      data-edit-text="${escapeHtml(String(entry.textInput || ''))}"
+      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}">
       <div class="entry-card-main entry-card-main-desktop">
         <span class="status-dot ${processedClass}" aria-hidden="true"></span>
         <div class="entry-card-content">
@@ -123,7 +127,10 @@ function renderMobileEntry(entry) {
   ` : '';
 
   return `
-    <article class="entry-card ${processedClass}">
+    <article class="entry-card ${processedClass}"
+      data-edit-entry-id="${escapeHtml(entry.id)}"
+      data-edit-text="${escapeHtml(String(entry.textInput || ''))}"
+      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}">
       <div class="entry-card-main">
         <span class="status-dot ${processedClass}" aria-hidden="true"></span>
         <div class="entry-card-content">
@@ -207,6 +214,8 @@ function formatTimestamp(value) {
 }
 
 function updateFilterSummary(hiddenCount) {
+  if (!filterSummary || !toggleHiddenButton) return;
+
   if (showAllEntries) {
     filterSummary.textContent = hiddenCount > 0
       ? `Viser alle notater, inkludert ${hiddenCount} skjulte`
@@ -274,10 +283,24 @@ function handleToggleHidden() {
   renderEntries(currentEntries);
 }
 
+function handleEditClick(event) {
+  if (event.target.closest('[data-entry-id]')) return;
+  const card = event.target.closest('[data-edit-entry-id]');
+  if (!card) return;
+  openEditModal({
+    id: card.dataset.editEntryId,
+    textInput: card.dataset.editText,
+    category: card.dataset.editCategory
+  }, loadEntries);
+}
+
 requireAuth((user) => {
   userLabel.textContent = user.email || '';
   refreshButton.addEventListener('click', loadEntries);
-  toggleHiddenButton.addEventListener('click', handleToggleHidden);
+  if (toggleHiddenButton) {
+    toggleHiddenButton.addEventListener('click', handleToggleHidden);
+  }
   document.addEventListener('click', handleDeleteClick);
+  document.addEventListener('click', handleEditClick);
   loadEntries();
 });
