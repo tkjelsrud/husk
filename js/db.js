@@ -36,6 +36,7 @@ export async function addEntry({ textInput, category }, user) {
     category,
     priority: 'normal',
     processed: false,
+    done: false,
     dueDate: null,
     addedByUid: user.uid,
     addedByEmail: user.email || '',
@@ -55,4 +56,8 @@ export async function deleteEntry(entryId) {
 
 export async function updateEntry(entryId, { textInput, category }) {
   return updateDoc(doc(db, 'entries', entryId), { textInput, category });
+}
+
+export async function markEntryDone(entryId) {
+  return updateDoc(doc(db, 'entries', entryId), { done: true });
 }

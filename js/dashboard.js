@@ -96,10 +96,12 @@ async function loadRecent() {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
       const statusClass = e.processed ? 'done' : 'pending';
-      return `<div class="recent-entry" role="button" tabindex="0"
+      const doneClass = e.done === true ? 'entry-done' : '';
+      return `<div class="recent-entry ${doneClass}" role="button" tabindex="0"
         data-edit-id="${escapeHtml(e.id)}"
         data-edit-text="${escapeAttr(String(e.textInput || ''))}"
-        data-edit-category="${escapeHtml(String(e.category || 'unknown'))}">
+        data-edit-category="${escapeHtml(String(e.category || 'unknown'))}"
+        data-edit-done="${e.done === true ? 'true' : 'false'}">
         <span class="status-dot ${statusClass}" aria-hidden="true"></span>
         <span class="recent-entry-text">${text}</span>
         <span class="recent-entry-date">${date}</span>
@@ -116,7 +118,8 @@ recentList.addEventListener('click', (e) => {
   openEditModal({
     id: row.dataset.editId,
     textInput: row.dataset.editText,
-    category: row.dataset.editCategory
+    category: row.dataset.editCategory,
+    done: row.dataset.editDone === 'true'
   }, loadRecent);
 });
 

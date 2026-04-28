@@ -34,6 +34,7 @@ def serialize_entry(entry: dict):
         'category': entry.get('category'),
         'priority': entry.get('priority'),
         'processed': entry.get('processed'),
+        'done': entry.get('done', False),
         'dueDate': maybe_iso(entry.get('dueDate')),
         'createdAt': maybe_iso(entry.get('createdAt')),
         'processingSummary': entry.get('processingSummary'),
@@ -152,6 +153,7 @@ def handle_tools_list(request_id):
                             'type': 'string',
                             'enum': ENTRY_PRIORITIES,
                         },
+                        'done': {'type': 'boolean'},
                     },
                     'required': ['id'],
                 },
@@ -159,6 +161,17 @@ def handle_tools_list(request_id):
             {
                 'name': 'delete_work_item',
                 'description': 'Delete a Firestore entry by document id, regardless of category.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                },
+            },
+            {
+                'name': 'mark_done_work_item',
+                'description': 'Mark a Firestore entry as done by document id. The entry is not deleted, just flagged as completed.',
                 'inputSchema': {
                     'type': 'object',
                     'properties': {
@@ -260,8 +273,11 @@ def handle_tools_call(request_id, params):
                 return error_response(request_id, -32602, f'priority must be one of: {allowed}')
             updates['priority'] = priority
 
+        if 'done' in arguments:
+            updates['done'] = bool(arguments.get('done'))
+
         if not updates:
-            return error_response(request_id, -32602, 'at least one of textInput, category, or priority is required')
+            return error_response(request_id, -32602, 'at least one of textInput, category, priority, or done is required')
 
         entry = update_entry(db, entry_id, updates)
         if not entry:
@@ -288,6 +304,22 @@ def handle_tools_call(request_id, params):
                 {
                     'type': 'text',
                     'text': json.dumps({'deleted': True, 'id': entry_id}, ensure_ascii=True),
+                }
+            ]
+        })
+
+    if tool_name == 'mark_done_work_item':
+        entry_id = str(arguments.get('id', '')).strip()
+        if not entry_id:
+            return error_response(request_id, -32602, 'id is required')
+        entry = update_entry(db, entry_id, {'done': True})
+        if not entry:
+            return error_response(request_id, -32004, 'item not found')
+        return success_response(request_id, {
+            'content': [
+                {
+                    'type': 'text',
+                    'text': json.dumps({'item': serialize_entry(entry)}, ensure_ascii=True),
                 }
             ]
         })

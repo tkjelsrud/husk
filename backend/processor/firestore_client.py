@@ -124,6 +124,9 @@ def update_entry(db, doc_id: str, payload: dict):
         if priority in ENTRY_PRIORITIES:
             updates['priority'] = priority
 
+    if 'done' in payload:
+        updates['done'] = bool(payload['done'])
+
     if not updates:
         return {'id': snapshot.id, **(snapshot.to_dict() or {})}
 

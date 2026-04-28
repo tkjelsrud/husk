@@ -1,4 +1,4 @@
-import { updateEntry, ENTRY_CATEGORIES } from './db.js';
+import { updateEntry, markEntryDone, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 
 let dialog = null;
@@ -6,6 +6,7 @@ let textField = null;
 let categoryField = null;
 let statusEl = null;
 let saveButton = null;
+let doneButton = null;
 let currentEntryId = null;
 let pendingOnSave = null;
 
@@ -32,6 +33,7 @@ function buildDialog() {
       </div>
       <div class="edit-dialog-footer mt-4">
         <button type="button" id="edit-cancel" class="btn btn-link text-muted">Avbryt</button>
+        <button type="button" id="edit-done" class="btn btn-outline-secondary">Ferdig</button>
         <button type="button" id="edit-save" class="btn btn-dark">Lagre</button>
       </div>
     </div>
@@ -42,16 +44,33 @@ function buildDialog() {
   categoryField = dialog.querySelector('#edit-category');
   statusEl = dialog.querySelector('#edit-status');
   saveButton = dialog.querySelector('#edit-save');
+  doneButton = dialog.querySelector('#edit-done');
 
   dialog.querySelector('#edit-cancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
   saveButton.addEventListener('click', handleSave);
+  doneButton.addEventListener('click', handleMarkDone);
 }
 
 function showStatus(kind, message) {
   statusEl.textContent = message;
   statusEl.className = `alert alert-${kind}`;
   statusEl.classList.remove('d-none');
+}
+
+async function handleMarkDone() {
+  doneButton.disabled = true;
+  saveButton.disabled = true;
+  try {
+    await markEntryDone(currentEntryId);
+    dialog.close();
+    if (pendingOnSave) pendingOnSave();
+  } catch (err) {
+    console.error(err);
+    showStatus('danger', 'Kunne ikke markere som ferdig.');
+    doneButton.disabled = false;
+    saveButton.disabled = false;
+  }
 }
 
 async function handleSave() {
@@ -94,6 +113,8 @@ export function openEditModal(entry, onSave) {
   categoryField.value = entry.category || 'unknown';
   statusEl.classList.add('d-none');
   saveButton.disabled = false;
+  doneButton.disabled = false;
+  doneButton.classList.toggle('d-none', entry.done === true);
   dialog.showModal();
   textField.focus();
   textField.setSelectionRange(textField.value.length, textField.value.length);

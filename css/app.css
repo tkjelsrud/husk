@@ -169,6 +169,15 @@ body {
   line-height: 1.35;
 }
 
+.entry-done {
+  opacity: 0.45;
+}
+
+.entry-done .entry-text,
+.entry-done .recent-entry-text {
+  text-decoration: line-through;
+}
+
 .entry-text-mobile {
   font-size: 0.98rem;
 }
@@ -229,6 +238,21 @@ body {
   word-break: break-word;
 }
 
+.mark-done-link {
+  border: 0;
+  background: transparent;
+  color: #4f8f5d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+}
+
+.mark-done-link:hover,
+.mark-done-link:focus {
+  color: #2b6d39;
+}
+
 .delete-entry-link {
   border: 0;
   background: transparent;
@@ -277,6 +301,13 @@ body {
   align-items: flex-start;
   gap: 0.75rem;
   margin-bottom: 0.45rem;
+}
+
+.entry-card-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .entry-card-subline {

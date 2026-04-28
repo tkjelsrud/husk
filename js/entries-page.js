@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { deleteEntry, getEntries } from './db.js';
+import { deleteEntry, getEntries, markEntryDone } from './db.js';
 import { shouldHideEntry } from './lib/entries-filter.js';
 import { openEditModal } from './edit-modal.js';
 
@@ -54,6 +54,8 @@ function renderEntries(entries) {
 function renderDesktopEntry(entry) {
   const processedLabel = entry.processed ? 'Prosessert' : 'Ikke prosessert';
   const processedClass = entry.processed ? 'done' : 'pending';
+  const isDone = entry.done === true;
+  const doneClass = isDone ? 'entry-done' : '';
   const text = escapeHtml(String(entry.textInput || ''));
   const entryId = escapeHtml(String(entry.id || ''));
   const summary = escapeHtml(String(entry.processingSummary || 'Ingen prosessering enda.'));
@@ -70,12 +72,16 @@ function renderDesktopEntry(entry) {
       <pre class="processing-json">${details}</pre>
     </details>
   ` : '';
+  const doneButton = isDone
+    ? ''
+    : `<button class="mark-done-link mark-done-link-desktop" type="button" data-done-entry-id="${entryId}" aria-label="Marker som ferdig">Ferdig</button>`;
 
   return `
-    <article class="entry-card entry-card-desktop ${processedClass}"
+    <article class="entry-card entry-card-desktop ${processedClass} ${doneClass}"
       data-edit-entry-id="${entryId}"
       data-edit-text="${escapeHtml(String(entry.textInput || ''))}"
-      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}">
+      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}"
+      data-edit-done="${isDone ? 'true' : 'false'}">
       <div class="entry-card-main entry-card-main-desktop">
         <span class="status-dot ${processedClass}" aria-hidden="true"></span>
         <div class="entry-card-content">
@@ -84,7 +90,10 @@ function renderDesktopEntry(entry) {
               <span>${createdAt}</span>
               <span>${dueDate === '-' ? 'Ingen frist' : `Frist ${dueDate}`}</span>
             </div>
-            <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${entryId}" aria-label="Slett">Slett</button>
+            <div class="entry-card-actions">
+              ${doneButton}
+              <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${entryId}" aria-label="Slett">Slett</button>
+            </div>
           </div>
           <pre class="entry-text">${text}</pre>
           <details class="entry-extra entry-extra-desktop">
@@ -110,6 +119,8 @@ function renderDesktopEntry(entry) {
 function renderMobileEntry(entry) {
   const processedLabel = entry.processed ? 'Prosessert' : 'Ikke prosessert';
   const processedClass = entry.processed ? 'done' : 'pending';
+  const isDone = entry.done === true;
+  const doneClass = isDone ? 'entry-done' : '';
   const text = escapeHtml(String(entry.textInput || ''));
   const createdAt = escapeHtml(formatTimestamp(entry.createdAt));
   const dueDate = escapeHtml(formatTimestamp(entry.dueDate));
@@ -125,12 +136,16 @@ function renderMobileEntry(entry) {
       <pre class="processing-json">${details}</pre>
     </details>
   ` : '';
+  const doneButton = isDone
+    ? ''
+    : `<button class="mark-done-link mark-done-link-mobile" type="button" data-done-entry-id="${escapeHtml(entry.id)}" aria-label="Marker som ferdig">Ferdig</button>`;
 
   return `
-    <article class="entry-card ${processedClass}"
+    <article class="entry-card ${processedClass} ${doneClass}"
       data-edit-entry-id="${escapeHtml(entry.id)}"
       data-edit-text="${escapeHtml(String(entry.textInput || ''))}"
-      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}">
+      data-edit-category="${escapeHtml(String(entry.category || 'unknown'))}"
+      data-edit-done="${isDone ? 'true' : 'false'}">
       <div class="entry-card-main">
         <span class="status-dot ${processedClass}" aria-hidden="true"></span>
         <div class="entry-card-content">
@@ -140,7 +155,10 @@ function renderMobileEntry(entry) {
             <span>${dueDate === '-' ? 'Ingen frist' : `Frist ${dueDate}`}</span>
           </div>
         </div>
-        <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">Slett</button>
+        <div class="entry-card-actions">
+          ${doneButton}
+          <button class="delete-entry-link delete-entry-link-mobile" type="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Slett">Slett</button>
+        </div>
       </div>
       <details class="entry-extra">
         <summary>Mer</summary>
@@ -278,6 +296,25 @@ async function handleDeleteClick(event) {
   }
 }
 
+async function handleMarkDoneClick(event) {
+  const doneButton = event.target.closest('[data-done-entry-id]');
+  if (!doneButton) return;
+
+  const entryId = doneButton.dataset.doneEntryId;
+  if (!entryId) return;
+
+  hideStatus();
+  doneButton.disabled = true;
+  try {
+    await markEntryDone(entryId);
+    await loadEntries();
+  } catch (err) {
+    console.error(err);
+    showStatus('danger', 'Kunne ikke markere som ferdig.');
+    doneButton.disabled = false;
+  }
+}
+
 function handleToggleHidden() {
   showAllEntries = !showAllEntries;
   renderEntries(currentEntries);
@@ -285,12 +322,14 @@ function handleToggleHidden() {
 
 function handleEditClick(event) {
   if (event.target.closest('[data-entry-id]')) return;
+  if (event.target.closest('[data-done-entry-id]')) return;
   const card = event.target.closest('[data-edit-entry-id]');
   if (!card) return;
   openEditModal({
     id: card.dataset.editEntryId,
     textInput: card.dataset.editText,
-    category: card.dataset.editCategory
+    category: card.dataset.editCategory,
+    done: card.dataset.editDone === 'true'
   }, loadEntries);
 }
 
@@ -301,6 +340,7 @@ requireAuth((user) => {
     toggleHiddenButton.addEventListener('click', handleToggleHidden);
   }
   document.addEventListener('click', handleDeleteClick);
+  document.addEventListener('click', handleMarkDoneClick);
   document.addEventListener('click', handleEditClick);
   loadEntries();
 });
