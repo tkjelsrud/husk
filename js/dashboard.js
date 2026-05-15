@@ -92,7 +92,9 @@ async function loadRecent() {
     const entries = await getEntries();
     if (entries.length === 0) return;
     recentSection.classList.remove('d-none');
-    recentList.innerHTML = entries.slice(0, 10).map((e) => {
+    const isJobbVisible = jobbFilter && jobbFilter.checked;
+const filteredEntries = entries.filter((e) => isJobbVisible || e.category !== 'work');
+recentList.innerHTML = filteredEntries.slice(0, 10).map((e) => {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
       const statusClass = e.processed ? 'done' : 'pending';
@@ -112,7 +114,7 @@ async function loadRecent() {
   }
 }
 
-// Filter the dashboard when 'Vis jobb' checkbox is toggled
+// Filter the dashboard when 'Vis jobber' checkbox is toggled
 const jobbFilter = document.getElementById('filter-jobb');
 if (jobbFilter) {
   jobbFilter.addEventListener('change', () => loadRecent());
