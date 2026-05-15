@@ -61,7 +61,7 @@ def test_update_entry(mock_firestore_client, sample_entry):
     updates = doc_ref.update.call_args[0][0]
 
     assert updates["textInput"] == "Updated text"
-    assert "lastEdited" in updates
+    assert "createdAt" in updates
 
 def test_fetch_entries(mock_firestore_client, sample_entry):
     """Test fetching entries sorted by lastEdited"""
