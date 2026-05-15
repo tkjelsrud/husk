@@ -112,6 +112,12 @@ async function loadRecent() {
   }
 }
 
+// Filter the dashboard when 'Vis jobb' checkbox is toggled
+const jobbFilter = document.getElementById('filter-jobb');
+if (jobbFilter) {
+  jobbFilter.addEventListener('change', () => loadRecent());
+}
+
 recentList.addEventListener('click', (e) => {
   const row = e.target.closest('[data-edit-id]');
   if (!row) return;
