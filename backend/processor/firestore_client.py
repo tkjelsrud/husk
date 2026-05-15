@@ -31,7 +31,7 @@ def fetch_unprocessed_entries(db, limit: int):
 
 
 def fetch_entries(db, limit: int = 20, category: str = 'work'):
-    query = db.collection('entries').order_by('createdAt', direction=firestore.Query.DESCENDING).limit(limit * 5)
+    query = db.collection('entries').order_by('lastEdited', direction=firestore.Query.DESCENDING).limit(limit * 5)
     docs = []
     for doc in query.stream():
         data = doc.to_dict() or {}
@@ -126,6 +126,8 @@ def update_entry(db, doc_id: str, payload: dict):
 
     if 'done' in payload:
         updates['done'] = bool(payload['done'])
+
+    updates['lastEdited'] = datetime.now(timezone.utc)
 
     if not updates:
         return {'id': snapshot.id, **(snapshot.to_dict() or {})}
