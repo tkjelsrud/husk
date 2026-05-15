@@ -263,7 +263,7 @@ async function loadEntries() {
 
   try {
     currentEntries = await getEntries();
-renderEntries([...currentEntries].sort((a, b) => new Date(b.lastEdited) - new Date(a.lastEdited)));
+renderEntries([...currentEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');

@@ -22,7 +22,7 @@ def sample_entry():
         "processed": False,
         "done": False,
         "createdAt": datetime(2023, 1, 1, tzinfo=timezone.utc),
-        "lastEdited": datetime(2023, 1, 1, tzinfo=timezone.utc),
+
     }
 
 def test_create_entry(mock_firestore_client):
@@ -48,7 +48,7 @@ def test_create_entry(mock_firestore_client):
     assert "createdAt" in payload
 
 def test_update_entry(mock_firestore_client, sample_entry):
-    """Test updating an entry, ensuring lastEdited is updated"""
+    """Test updating an entry, ensuring createdAt updates correctly"""
     doc_ref = MagicMock()
     doc_ref.get.return_value.exists = True
     doc_ref.get.return_value.to_dict.return_value = sample_entry
@@ -64,7 +64,7 @@ def test_update_entry(mock_firestore_client, sample_entry):
     assert "createdAt" in updates
 
 def test_fetch_entries(mock_firestore_client, sample_entry):
-    """Test fetching entries sorted by lastEdited"""
+    """Test fetching entries sorted by createdAt"""
     entry_mock = MagicMock()
     entry_mock.id = sample_entry["id"]
     entry_mock.to_dict.return_value = sample_entry
@@ -77,4 +77,4 @@ def test_fetch_entries(mock_firestore_client, sample_entry):
     
     assert len(entries) == 1
     assert entries[0].id == "test_id"
-    assert entries[0].to_dict()["lastEdited"] == sample_entry["lastEdited"]
+    
