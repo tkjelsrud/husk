@@ -55,9 +55,16 @@ export async function deleteEntry(entryId) {
 }
 
 export async function updateEntry(entryId, { textInput, category }) {
-  return updateDoc(doc(db, 'entries', entryId), { textInput, category });
+  return updateDoc(doc(db, 'entries', entryId), { 
+    textInput, 
+    category, 
+    createdAt: serverTimestamp() 
+  });
 }
 
 export async function markEntryDone(entryId) {
-  return updateDoc(doc(db, 'entries', entryId), { done: true });
+  return updateDoc(doc(db, 'entries', entryId), { 
+    done: true, 
+    createdAt: serverTimestamp() 
+  });
 }
