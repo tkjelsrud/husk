@@ -30,8 +30,10 @@ service cloud.firestore {
         && request.resource.data.addedByEmail == request.auth.token.email
         && request.resource.data.createdAt is timestamp;
       allow update: if isAllowedUser()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done']);
+  			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt'])
+  			&& (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp);
       allow delete: if isAllowedUser();
+      
     }
     match /{document=**} {
       allow read, write: if false;
