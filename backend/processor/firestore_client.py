@@ -127,7 +127,7 @@ def update_entry(db, doc_id: str, payload: dict):
     if 'done' in payload:
         updates['done'] = bool(payload['done'])
 
-    updates['createdAt'] = datetime.now(timezone.utc)
+    updates['createdAt'] = firestore.SERVER_TIMESTAMP
 
     if not updates:
         return {'id': snapshot.id, **(snapshot.to_dict() or {})}
