@@ -224,3 +224,80 @@ Authorization: Bearer your-secret-token-here
 curl -H "Authorization: Bearer your-secret-token-here" \
   http://localhost:5000/api/fixed-entries/today
 ```
+
+### Local JSON Export
+
+For home automation systems on the same server, fixed entries are automatically exported to a local JSON file - no API server needed.
+
+#### How it Works
+
+The backend processor exports all fixed entries to `/tmp/husk_fixed_entries.json` after each processing run:
+- File only updates when content changes (preserves mtime for efficient caching)
+- Runs automatically with the processor (every 10 min during active hours, hourly at night)
+- On errors, keeps existing file intact
+- File is readable by all users (`chmod 644`)
+
+#### Configuration
+
+Set in `backend/.env` (defaults to `/tmp/husk_fixed_entries.json` if not specified):
+```env
+FIXED_EXPORT_PATH=/tmp/husk_fixed_entries.json
+```
+
+#### JSON Format
+
+```json
+{
+  "exported_at": "2026-05-17T18:30:00Z",
+  "count": 5,
+  "entries": [
+    {
+      "id": "abc123",
+      "textInput": "Water plants",
+      "category": "home",
+      "priority": "normal",
+      "entryType": "fixed",
+      "recurrence": {
+        "type": "weekly",
+        "value": [1, 4]
+      },
+      "createdAt": "2026-05-15T10:00:00Z",
+      "addedByEmail": "user@example.com"
+    }
+  ]
+}
+```
+
+#### Example: Home Automation Usage
+
+```python
+import json
+from datetime import datetime
+
+# Read exported file
+with open('/tmp/husk_fixed_entries.json') as f:
+    data = json.load(f)
+
+# Filter for today's entries
+today = datetime.now()
+weekday = today.weekday()  # 0=Monday, 6=Sunday
+day = today.day
+date_str = today.strftime('%m-%d')
+
+for entry in data['entries']:
+    rec = entry.get('recurrence', {})
+    rec_type = rec.get('type')
+    
+    matches = False
+    if rec_type == 'daily':
+        matches = True
+    elif rec_type == 'weekly' and weekday in rec.get('value', []):
+        matches = True
+    elif rec_type == 'monthly' and day == rec.get('value'):
+        matches = True
+    elif rec_type == 'yearly' and date_str == rec.get('value'):
+        matches = True
+    
+    if matches:
+        print(f"Reminder: {entry['textInput']}")
+```

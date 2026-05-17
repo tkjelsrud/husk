@@ -6,6 +6,7 @@ import os
 
 from .config import load_settings
 from .entry_processor import process_entry
+from .fixed_exporter import export_fixed_entries
 from .firestore_client import (
     create_client,
     fetch_unprocessed_entries,
@@ -44,6 +45,17 @@ def run_once():
             break
 
     logging.info('Finished processing run, processed=%s', total_processed)
+
+    # Export fixed entries to JSON
+    if settings.fixed_export_path:
+        try:
+            written = export_fixed_entries(db, settings.fixed_export_path)
+            if written:
+                logging.info('Exported fixed entries to %s', settings.fixed_export_path)
+            else:
+                logging.debug('Fixed entries unchanged, skipped export')
+        except Exception as err:
+            logging.warning('Failed to export fixed entries: %s', err)
 
 
 def main():

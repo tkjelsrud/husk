@@ -24,6 +24,7 @@ class Settings:
     google_oauth_client_secret: str | None
     google_oauth_token_path: str | None
     poll_limit: int
+    fixed_export_path: str | None
 
 
 def load_settings() -> Settings:
@@ -39,4 +40,5 @@ def load_settings() -> Settings:
         google_oauth_client_secret=os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '').strip() or None,
         google_oauth_token_path=os.environ.get('GOOGLE_OAUTH_TOKEN_PATH', '').strip() or None,
         poll_limit=int(os.environ.get('POLL_LIMIT', '10')),
+        fixed_export_path=os.environ.get('FIXED_EXPORT_PATH', '/tmp/husk_fixed_entries.json').strip() or None,
     )
