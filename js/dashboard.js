@@ -232,19 +232,10 @@ async function loadRecent() {
     const isJobbVisible = jobbFilter && jobbFilter.checked;
     const filteredEntries = entries.filter((e) => isJobbVisible || e.category !== 'work');
     
-    // Sort: done items at the bottom (by createdAt for each group)
-    const sortedEntries = filteredEntries.sort((a, b) => {
-      // First, separate by done status
-      if (a.done !== b.done) {
-        return a.done ? 1 : -1; // done items go to bottom
-      }
-      // Within each group, sort by createdAt (newest first)
-      const aTime = a.createdAt?.toMillis?.() || 0;
-      const bTime = b.createdAt?.toMillis?.() || 0;
-      return bTime - aTime;
-    });
+    // Sort by createdAt (newest first) - already sorted by getEntries()
+    // No need to re-sort, entries are already ordered by createdAt desc
     
-    recentList.innerHTML = sortedEntries.slice(0, 10).map((e) => {
+    recentList.innerHTML = filteredEntries.slice(0, 20).map((e) => {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
       const statusClass = e.processed ? 'done' : 'pending';
