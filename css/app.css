@@ -472,6 +472,58 @@ body {
   white-space: nowrap;
 }
 
+/* Compact form styles */
+.entry-form-compact .form-extra-controls {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.entry-form-compact.entry-form-expanded .form-extra-controls {
+  display: block;
+  opacity: 1;
+}
+
+.entry-form-compact #entry-text {
+  transition: all 0.2s ease;
+}
+
+.entry-form-compact.entry-form-expanded #entry-text {
+  min-height: 120px;
+}
+
+/* Larger font for recent entries list */
+.recent-entry {
+  font-size: 0.95rem;
+  position: relative;
+  will-change: transform, opacity;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y; /* Allow vertical scrolling but enable horizontal swipe detection */
+}
+
+.recent-entry-text {
+  font-size: 0.95rem;
+}
+
+.recent-entry-date {
+  font-size: 0.82rem;
+}
+
+/* Swipe gesture visual feedback */
+.recent-entry:not(.entry-done)::after {
+  content: '✓';
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #4f8f5d;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
 @media (max-width: 576px) {
   .app-nav .container {
     min-height: auto;
