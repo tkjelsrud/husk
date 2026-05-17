@@ -47,14 +47,18 @@ export async function addEntry({ textInput, category }, user) {
 }
 
 export async function getEntries() {
-  const entryQuery = query(
-    collection(db, 'entries'),
-    where('entryType', '==', 'regular')
-  );
+  // Get all entries (no entryType filter for backwards compatibility)
+  const entryQuery = query(collection(db, 'entries'));
   const snapshot = await getDocs(entryQuery);
   const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-  // Sort by createdAt in JavaScript (descending - newest first)
-  return entries.sort((a, b) => {
+  
+  // Filter in JavaScript: include 'regular' entries AND entries without entryType (old entries)
+  const regularEntries = entries.filter(entry => 
+    !entry.entryType || entry.entryType === 'regular'
+  );
+  
+  // Sort by createdAt (descending - newest first)
+  return regularEntries.sort((a, b) => {
     const aTime = a.createdAt?.toMillis?.() || 0;
     const bTime = b.createdAt?.toMillis?.() || 0;
     return bTime - aTime;
