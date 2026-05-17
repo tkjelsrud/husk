@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 def fetch_fixed_entries(db) -> list[dict]:
     """Fetch all fixed entries from Firestore and serialize them."""
-    query = db.collection('entries').where('entryType', '==', 'fixed').order_by('createdAt', direction='DESCENDING')
+    query = db.collection('entries').where('entryType', '==', 'fixed')
     
     entries = []
     for doc in query.stream():
