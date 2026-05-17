@@ -1,4 +1,4 @@
-import { updateEntry, markEntryDone, ENTRY_CATEGORIES } from './db.js';
+import { updateEntry, markEntryDone, markEntryNotDone, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 
 let dialog = null;
@@ -8,6 +8,7 @@ let statusEl = null;
 let saveButton = null;
 let doneButton = null;
 let currentEntryId = null;
+let currentEntryDone = false;
 let pendingOnSave = null;
 
 function buildDialog() {
@@ -62,12 +63,18 @@ async function handleMarkDone() {
   doneButton.disabled = true;
   saveButton.disabled = true;
   try {
-    await markEntryDone(currentEntryId);
+    if (currentEntryDone) {
+      // Mark as not done (back to pending)
+      await markEntryNotDone(currentEntryId);
+    } else {
+      // Mark as done
+      await markEntryDone(currentEntryId);
+    }
     dialog.close();
     if (pendingOnSave) pendingOnSave();
   } catch (err) {
     console.error(err);
-    showStatus('danger', 'Kunne ikke markere som ferdig.');
+    showStatus('danger', 'Kunne ikke oppdatere status.');
     doneButton.disabled = false;
     saveButton.disabled = false;
   }
@@ -108,13 +115,23 @@ async function handleSave() {
 export function openEditModal(entry, onSave) {
   if (!dialog) buildDialog();
   currentEntryId = entry.id;
+  currentEntryDone = entry.done === true;
   pendingOnSave = onSave;
   textField.value = entry.textInput || '';
   categoryField.value = entry.category || 'unknown';
   statusEl.classList.add('d-none');
   saveButton.disabled = false;
   doneButton.disabled = false;
-  doneButton.classList.toggle('d-none', entry.done === true);
+  
+  // Update button text based on done status
+  if (currentEntryDone) {
+    doneButton.textContent = 'Marker som uferdig';
+    doneButton.className = 'btn btn-outline-warning';
+  } else {
+    doneButton.textContent = 'Ferdig';
+    doneButton.className = 'btn btn-outline-secondary';
+  }
+  
   dialog.showModal();
   textField.focus();
   textField.setSelectionRange(textField.value.length, textField.value.length);

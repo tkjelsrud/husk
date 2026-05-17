@@ -68,3 +68,10 @@ export async function markEntryDone(entryId) {
     createdAt: serverTimestamp() 
   });
 }
+
+export async function markEntryNotDone(entryId) {
+  return updateDoc(doc(db, 'entries', entryId), { 
+    done: false, 
+    createdAt: serverTimestamp() 
+  });
+}
