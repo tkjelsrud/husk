@@ -25,9 +25,18 @@ def fetch_unprocessed_entries(db, limit: int):
     query = (
         db.collection('entries')
         .where('processed', '==', False)
-        .limit(limit)
+        .limit(limit * 2)  # Fetch extra since we'll filter out fixed entries
     )
-    return list(query.stream())
+    docs = []
+    for doc in query.stream():
+        data = doc.to_dict() or {}
+        # Skip fixed entries - they should not be processed by OpenCode
+        if data.get('entryType') == 'fixed':
+            continue
+        docs.append(doc)
+        if len(docs) >= limit:
+            break
+    return docs
 
 
 def fetch_entries(db, limit: int = 20, category: str = 'work'):
@@ -70,7 +79,9 @@ def create_entry(
         'textInput': text_input,
         'category': normalized_category,
         'priority': normalized_priority,
+        'entryType': 'regular',
         'processed': False,
+        'done': False,
         'dueDate': None,
         'addedByUid': added_by_uid,
         'addedByEmail': added_by_email,
