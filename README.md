@@ -11,6 +11,8 @@ This is a plain static site. There is no bundler, framework, or npm-based app ru
 - one protected input form for 1 to 5 lines of text plus category
 - each saved record gets a server timestamp, `priority: normal`, `processed: false`, and empty due date
 - separate read-only listing page for all submitted entries
+- **Fixed entries**: Long-term reminders with recurrence patterns (daily, weekly, monthly, yearly)
+- **JSON API**: Read-only API for home automation systems to access fixed entries
 
 ## Firebase setup
 
@@ -133,3 +135,92 @@ node --test
 ```
 
 The test suite currently covers the 1 to 5 line validation helper.
+
+## Fixed Entries
+
+Fixed entries are long-term reminders that can be used for recurring events like:
+- Birthdays (yearly: specific MM-DD date)
+- Weekly routines (Monday, Tuesday, etc.)
+- Monthly bills (1st of month, 15th, etc.)
+- Daily habits
+
+### Recurrence Patterns
+
+- **None**: Single static reminder
+- **Daily**: Repeats every day
+- **Weekly**: Repeats on selected days of the week
+- **Monthly**: Repeats on a specific day of the month (1-31)
+- **Yearly**: Repeats on a specific date (MM-DD format)
+
+### API Access
+
+Fixed entries can be accessed via a JSON API for home automation systems.
+
+#### Setup
+
+1. Set `HUSK_API_TOKEN` in `backend/.env`:
+```env
+HUSK_API_TOKEN=your-secret-token-here
+```
+
+2. Run the API server:
+```sh
+cd backend
+python -m api_server
+```
+
+The API server runs on port 5000 by default (configurable via `PORT` env var).
+
+#### Endpoints
+
+**Health Check**
+```bash
+GET /health
+# No authentication required
+```
+
+**Get All Fixed Entries**
+```bash
+GET /api/fixed-entries
+Authorization: Bearer your-secret-token-here
+
+# Response:
+{
+  "entries": [
+    {
+      "id": "abc123",
+      "textInput": "Mom's birthday",
+      "category": "family",
+      "entryType": "fixed",
+      "recurrence": {
+        "type": "yearly",
+        "date": "05-17"
+      },
+      "createdAt": "2026-05-17T10:30:00",
+      "addedByEmail": "user@example.com"
+    }
+  ],
+  "count": 1,
+  "timestamp": "2026-05-17T14:30:00"
+}
+```
+
+**Get Today's Fixed Entries**
+```bash
+GET /api/fixed-entries/today
+Authorization: Bearer your-secret-token-here
+
+# Filters entries matching today's:
+# - Daily recurrence
+# - Weekly recurrence (matching weekday)
+# - Monthly recurrence (matching day of month)
+# - Yearly recurrence (matching MM-DD)
+```
+
+#### Example: Home Automation
+
+```bash
+# Get today's reminders
+curl -H "Authorization: Bearer your-secret-token-here" \
+  http://localhost:5000/api/fixed-entries/today
+```

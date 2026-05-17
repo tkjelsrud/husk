@@ -28,10 +28,14 @@ service cloud.firestore {
         ]
         && request.resource.data.addedByUid == request.auth.uid
         && request.resource.data.addedByEmail == request.auth.token.email
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.createdAt is timestamp
+        && (!('entryType' in request.resource.data) || request.resource.data.entryType in ['regular', 'fixed'])
+        && (!('recurrence' in request.resource.data) || request.resource.data.recurrence is map);
       allow update: if isAllowedUser()
-  			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt'])
-  			&& (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp);
+  			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt', 'entryType', 'recurrence'])
+  			&& (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp)
+        && (!('entryType' in request.resource.data) || request.resource.data.entryType in ['regular', 'fixed'])
+        && (!('recurrence' in request.resource.data) || request.resource.data.recurrence is map);
       allow delete: if isAllowedUser();
       
     }

@@ -9,7 +9,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc
+  updateDoc,
+  where
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 const db = getFirestore(app);
@@ -38,6 +39,7 @@ export async function addEntry({ textInput, category }, user) {
     processed: false,
     done: false,
     dueDate: null,
+    entryType: 'regular',
     addedByUid: user.uid,
     addedByEmail: user.email || '',
     createdAt: serverTimestamp()
@@ -45,7 +47,21 @@ export async function addEntry({ textInput, category }, user) {
 }
 
 export async function getEntries() {
-  const entryQuery = query(collection(db, 'entries'), orderBy('createdAt', 'desc'));
+  const entryQuery = query(
+    collection(db, 'entries'),
+    where('entryType', '==', 'regular'),
+    orderBy('createdAt', 'desc')
+  );
+  const snapshot = await getDocs(entryQuery);
+  return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+export async function getFixedEntries() {
+  const entryQuery = query(
+    collection(db, 'entries'),
+    where('entryType', '==', 'fixed'),
+    orderBy('createdAt', 'desc')
+  );
   const snapshot = await getDocs(entryQuery);
   return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 }
@@ -72,6 +88,31 @@ export async function markEntryDone(entryId) {
 export async function markEntryNotDone(entryId) {
   return updateDoc(doc(db, 'entries', entryId), { 
     done: false, 
+    createdAt: serverTimestamp() 
+  });
+}
+
+export async function addFixedEntry({ textInput, category, recurrence }, user) {
+  return addDoc(collection(db, 'entries'), {
+    textInput,
+    category,
+    entryType: 'fixed',
+    recurrence: recurrence || { type: 'none' },
+    priority: 'normal',
+    processed: false,
+    done: false,
+    dueDate: null,
+    addedByUid: user.uid,
+    addedByEmail: user.email || '',
+    createdAt: serverTimestamp()
+  });
+}
+
+export async function updateFixedEntry(entryId, { textInput, category, recurrence }) {
+  return updateDoc(doc(db, 'entries', entryId), { 
+    textInput, 
+    category,
+    recurrence: recurrence || { type: 'none' },
     createdAt: serverTimestamp() 
   });
 }
