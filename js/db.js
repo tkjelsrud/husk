@@ -49,11 +49,16 @@ export async function addEntry({ textInput, category }, user) {
 export async function getEntries() {
   const entryQuery = query(
     collection(db, 'entries'),
-    where('entryType', '==', 'regular'),
-    orderBy('createdAt', 'desc')
+    where('entryType', '==', 'regular')
   );
   const snapshot = await getDocs(entryQuery);
-  return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  // Sort by createdAt in JavaScript (descending - newest first)
+  return entries.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 }
 
 export async function getFixedEntries() {
