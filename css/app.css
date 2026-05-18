@@ -535,9 +535,17 @@ body {
   transition: opacity 0.2s ease;
 }
 
+.entry-form-compact .form-extra-controls.d-flex {
+  display: none !important;
+}
+
 .entry-form-compact.entry-form-expanded .form-extra-controls {
   display: block;
   opacity: 1;
+}
+
+.entry-form-compact.entry-form-expanded .form-extra-controls.d-flex {
+  display: flex !important;
 }
 
 .entry-form-compact #entry-text {
