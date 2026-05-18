@@ -5,6 +5,7 @@ import { openEditModal } from './edit-modal.js';
 
 const recentSection = document.getElementById('recent-section');
 const recentList = document.getElementById('recent-list');
+const recentFilterTabs = document.getElementById('recent-filter-tabs');
 
 const form = document.getElementById('entry-form');
 const textField = document.getElementById('entry-text');
@@ -15,6 +16,7 @@ const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
 
 let currentUser = null;
+let activeRecentFilter = 'general';
 
 // Handle compact form expand/collapse
 function expandForm() {
@@ -227,14 +229,23 @@ function resetSwipe() {
 async function loadRecent() {
   try {
     const entries = await getEntries();
-    if (entries.length === 0) return;
+    if (entries.length === 0) {
+      recentSection.classList.add('d-none');
+      recentList.innerHTML = '';
+      return;
+    }
+
     recentSection.classList.remove('d-none');
-    const isJobbVisible = jobbFilter && jobbFilter.checked;
-    const filteredEntries = entries.filter((e) => isJobbVisible || e.category !== 'work');
+    const filteredEntries = entries.filter(matchesRecentFilter);
     
     // Sort by createdAt (newest first) - already sorted by getEntries()
     // No need to re-sort, entries are already ordered by createdAt desc
     
+    if (filteredEntries.length === 0) {
+      recentList.innerHTML = '<div class="text-muted py-2">Ingen treff i denne fanen.</div>';
+      return;
+    }
+
     recentList.innerHTML = filteredEntries.slice(0, 20).map((e) => {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
@@ -258,11 +269,47 @@ async function loadRecent() {
   }
 }
 
-// Filter the dashboard when 'Vis jobber' checkbox is toggled
-const jobbFilter = document.getElementById('filter-jobb');
-if (jobbFilter) {
-  jobbFilter.addEventListener('change', () => loadRecent());
+function hasFixedCalendarDate(entry) {
+  return Boolean(entry?.dueDate);
 }
+
+function matchesRecentFilter(entry) {
+  if (activeRecentFilter === 'calendar') {
+    return hasFixedCalendarDate(entry);
+  }
+
+  if (activeRecentFilter === 'work') {
+    return entry?.category === 'work' && !hasFixedCalendarDate(entry);
+  }
+
+  return entry?.category !== 'work' && !hasFixedCalendarDate(entry);
+}
+
+function updateRecentFilterTabs() {
+  if (!recentFilterTabs) return;
+
+  recentFilterTabs.querySelectorAll('[data-filter-tab]').forEach((button) => {
+    const isActive = button.dataset.filterTab === activeRecentFilter;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
+if (recentFilterTabs) {
+  recentFilterTabs.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-filter-tab]');
+    if (!button) return;
+
+    const nextFilter = button.dataset.filterTab || 'general';
+    if (nextFilter === activeRecentFilter) return;
+
+    activeRecentFilter = nextFilter;
+    updateRecentFilterTabs();
+    loadRecent();
+  });
+}
+
+updateRecentFilterTabs();
 
 recentList.addEventListener('click', (e) => {
   const row = e.target.closest('[data-edit-id]');
