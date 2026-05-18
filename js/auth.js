@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
+  signInWithRedirect,
   signOut
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
 
@@ -15,6 +16,7 @@ const provider = new GoogleAuthProvider();
 const authSetup = setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error('Failed to enable local auth persistence', err);
 });
+let authReadyPromise = null;
 
 async function loadRuntimeConfig() {
   try {
@@ -56,29 +58,80 @@ export async function loginWithGoogle() {
   return signInWithPopup(auth, provider);
 }
 
+export async function loginWithGoogleRedirect() {
+  await authSetup;
+  return signInWithRedirect(auth, provider);
+}
+
 export function logout(reason = '') {
   return signOut(auth).finally(() => {
     redirectToIndex(reason);
   });
 }
 
-export function requireAuth(initFn) {
-  authSetup.then(() => {
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        redirectToIndex();
-        return;
-      }
+export async function waitForAuthReady() {
+  await authSetup;
 
-      if (!await isAuthorizedUser(user)) {
-        await logout('unauthorized');
-        return;
-      }
-
-      initFn(user);
-    }, (err) => {
-      console.error(err);
-      redirectToIndex();
+  if (!authReadyPromise) {
+    authReadyPromise = new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      }, (err) => {
+        console.error('Failed while restoring auth state', err);
+        unsubscribe();
+        resolve(null);
+      });
     });
+  }
+
+  return authReadyPromise;
+}
+
+export function requireAuth(initFn) {
+  let initialized = false;
+  let currentUid = null;
+
+  function initIfNeeded(user) {
+    if (currentUid === user.uid) return;
+    currentUid = user.uid;
+    initFn(user);
+  }
+
+  waitForAuthReady().then(async (user) => {
+    if (!user) {
+      redirectToIndex();
+      return;
+    }
+
+    if (!await isAuthorizedUser(user)) {
+      await logout('unauthorized');
+      return;
+    }
+
+    initialized = true;
+    initIfNeeded(user);
+  }).catch((err) => {
+    console.error(err);
+    redirectToIndex();
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!initialized) return;
+
+    if (!user) {
+      redirectToIndex();
+      return;
+    }
+
+    if (!await isAuthorizedUser(user)) {
+      await logout('unauthorized');
+      return;
+    }
+
+    initIfNeeded(user);
+  }, (err) => {
+    console.error(err);
+    redirectToIndex();
   });
 }

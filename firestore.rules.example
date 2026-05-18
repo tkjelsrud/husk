@@ -18,6 +18,7 @@ service cloud.firestore {
         && request.resource.data.textInput.size() <= 1500
         && request.resource.data.priority in ['low', 'normal', 'high']
         && request.resource.data.processed == false
+        && request.resource.data.done == false
         && request.resource.data.dueDate == null
         && request.resource.data.category in [
           'unknown',
@@ -25,12 +26,16 @@ service cloud.firestore {
           'creative',
           'houseproj',
           'family',
-          'general'
+          'general',
+          'huskmcp'
         ]
         && request.resource.data.addedByUid == request.auth.uid
         && request.resource.data.addedByEmail == request.auth.token.email
-        && request.resource.data.createdAt is timestamp;
-      allow update, delete: if false;
+        && request.resource.data.createdAt is timestamp
+        && (!('sortOrder' in request.resource.data) || request.resource.data.sortOrder is int);
+      allow update: if isAllowedUser()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt', 'sortOrder']);
+      allow delete: if isAllowedUser();
     }
 
     match /{document=**} {

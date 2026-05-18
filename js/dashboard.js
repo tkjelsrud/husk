@@ -1,6 +1,7 @@
 import { logout, requireAuth } from './auth.js';
-import { addEntry, getEntries, markEntryDone, ENTRY_CATEGORIES } from './db.js';
+import { addEntry, getEntries, markEntryDone, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
+import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 
 const recentSection = document.getElementById('recent-section');
@@ -17,6 +18,18 @@ const statusMsg = document.getElementById('status-msg');
 
 let currentUser = null;
 let activeRecentFilter = 'general';
+let currentEntries = [];
+let currentFilteredEntries = [];
+let currentRenderedEntries = [];
+
+let dragState = {
+  pointerId: null,
+  handle: null,
+  row: null,
+  active: false,
+  moved: false,
+  startY: 0
+};
 
 // Handle compact form expand/collapse
 function expandForm() {
@@ -131,7 +144,129 @@ function attachSwipeHandlers() {
   });
 }
 
+function isDragHandleTarget(target) {
+  return Boolean(target?.closest?.('[data-drag-handle]'));
+}
+
+function resetDragState() {
+  if (dragState.row) {
+    dragState.row.classList.remove('recent-entry-dragging');
+  }
+
+  if (dragState.handle && dragState.pointerId !== null && dragState.handle.hasPointerCapture?.(dragState.pointerId)) {
+    dragState.handle.releasePointerCapture(dragState.pointerId);
+  }
+
+  dragState = {
+    pointerId: null,
+    handle: null,
+    row: null,
+    active: false,
+    moved: false,
+    startY: 0
+  };
+}
+
+function buildEntryOrderWithUpdatedFilteredIds(updatedFilteredIds) {
+  const filteredIds = new Set(currentFilteredEntries.map((entry) => entry.id));
+  const updatedEntriesById = new Map(
+    updatedFilteredIds
+      .map((entryId) => currentEntries.find((entry) => entry.id === entryId))
+      .filter(Boolean)
+      .map((entry) => [entry.id, entry])
+  );
+  const remainingFilteredEntries = currentFilteredEntries.filter((entry) => !updatedEntriesById.has(entry.id));
+  const orderedFilteredEntries = [
+    ...updatedFilteredIds.map((entryId) => updatedEntriesById.get(entryId)).filter(Boolean),
+    ...remainingFilteredEntries
+  ];
+
+  let filteredIndex = 0;
+  return currentEntries.map((entry) => {
+    if (!filteredIds.has(entry.id)) return entry;
+    const nextEntry = orderedFilteredEntries[filteredIndex];
+    filteredIndex += 1;
+    return nextEntry || entry;
+  });
+}
+
+async function persistDraggedOrder() {
+  const renderedIds = Array.from(recentList.querySelectorAll('.recent-entry[data-entry-id]'))
+    .map((row) => row.dataset.entryId)
+    .filter(Boolean);
+  const activeRenderedIds = currentRenderedEntries
+    .filter((entry) => entry.done !== true)
+    .map((entry) => entry.id);
+
+  if (renderedIds.length === 0 || activeRenderedIds.length === 0) return;
+
+  const reorderedActiveIds = renderedIds.filter((entryId) => activeRenderedIds.includes(entryId));
+  const nextOrderedEntries = buildEntryOrderWithUpdatedFilteredIds(reorderedActiveIds);
+
+  currentEntries = sortEntries(nextOrderedEntries);
+  await saveRegularEntriesOrder(currentEntries.map((entry) => entry.id));
+}
+
+async function handleDragFinish() {
+  if (dragState.active && dragState.moved) {
+    try {
+      await persistDraggedOrder();
+      await loadRecent();
+    } catch (err) {
+      console.error('Failed to reorder entries:', err);
+      await loadRecent();
+    }
+  }
+
+  resetDragState();
+}
+
+function handleDragPointerDown(event) {
+  const handle = event.target.closest('[data-drag-handle]');
+  if (!handle) return;
+
+  const row = handle.closest('.recent-entry[data-entry-id]');
+  if (!row) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  dragState.pointerId = event.pointerId;
+  dragState.handle = handle;
+  dragState.row = row;
+  dragState.active = false;
+  dragState.moved = false;
+  dragState.startY = event.clientY;
+
+  handle.setPointerCapture?.(event.pointerId);
+}
+
+function handleDragPointerMove(event) {
+  if (!dragState.row || dragState.pointerId !== event.pointerId) return;
+
+  const deltaY = Math.abs(event.clientY - dragState.startY);
+  if (!dragState.active && deltaY < 6) return;
+
+  event.preventDefault();
+  dragState.active = true;
+  dragState.moved = true;
+  dragState.row.classList.add('recent-entry-dragging');
+
+  const targetRow = document.elementFromPoint(event.clientX, event.clientY)?.closest('.recent-entry[data-entry-id]');
+  if (!targetRow || targetRow === dragState.row || targetRow.parentElement !== recentList) return;
+
+  const rect = targetRow.getBoundingClientRect();
+  const insertBefore = event.clientY < rect.top + rect.height / 2;
+  recentList.insertBefore(dragState.row, insertBefore ? targetRow : targetRow.nextSibling);
+}
+
+function handleDragPointerEnd(event) {
+  if (dragState.pointerId !== event.pointerId) return;
+  handleDragFinish();
+}
+
 function handleTouchStart(e) {
+  if (isDragHandleTarget(e.target)) return;
   const touch = e.touches[0];
   swipeState.startX = touch.clientX;
   swipeState.startY = touch.clientY;
@@ -141,6 +276,7 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
+  if (isDragHandleTarget(e.target)) return;
   if (!swipeState.element) return;
   
   const touch = e.touches[0];
@@ -228,7 +364,8 @@ function resetSwipe() {
 
 async function loadRecent() {
   try {
-    const entries = await getEntries();
+    currentEntries = await getEntries();
+    const entries = currentEntries;
     if (entries.length === 0) {
       recentSection.classList.add('d-none');
       recentList.innerHTML = '';
@@ -236,26 +373,28 @@ async function loadRecent() {
     }
 
     recentSection.classList.remove('d-none');
-    const filteredEntries = entries.filter(matchesRecentFilter);
-    
-    // Sort by createdAt (newest first) - already sorted by getEntries()
-    // No need to re-sort, entries are already ordered by createdAt desc
-    
+    currentFilteredEntries = entries.filter(matchesRecentFilter);
+    const filteredEntries = currentFilteredEntries;
+
     if (filteredEntries.length === 0) {
       recentList.innerHTML = '<div class="text-muted py-2">Ingen treff i denne fanen.</div>';
       return;
     }
 
-    recentList.innerHTML = filteredEntries.slice(0, 20).map((e) => {
+    currentRenderedEntries = filteredEntries.slice(0, 20);
+    recentList.innerHTML = currentRenderedEntries.map((e) => {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
       const statusClass = e.processed ? 'done' : 'pending';
       const doneClass = e.done === true ? 'entry-done' : '';
+      const dragHandle = e.done === true
+        ? ''
+        : `<button class="recent-entry-handle" type="button" aria-label="Flytt notat" data-drag-handle="true">⋮⋮</button>`;
       return `<div class="recent-entry ${doneClass}" role="button" tabindex="0"
+        data-entry-id="${escapeHtml(e.id)}"
         data-edit-id="${escapeHtml(e.id)}"
-        data-edit-text="${escapeAttr(String(e.textInput || ''))}"
-        data-edit-category="${escapeHtml(String(e.category || 'unknown'))}"
         data-edit-done="${e.done === true ? 'true' : 'false'}">
+        ${dragHandle}
         <span class="status-dot ${statusClass}" aria-hidden="true"></span>
         <span class="recent-entry-text">${text}</span>
         <span class="recent-entry-date">${date}</span>
@@ -312,18 +451,22 @@ if (recentFilterTabs) {
 updateRecentFilterTabs();
 
 recentList.addEventListener('click', (e) => {
+  if (dragState.moved || e.target.closest('[data-drag-handle]')) return;
   const row = e.target.closest('[data-edit-id]');
   if (!row) return;
+  const entry = currentEntries.find((item) => item.id === row.dataset.editId);
   openEditModal({
     id: row.dataset.editId,
     textInput: row.dataset.editText,
     category: row.dataset.editCategory,
-    done: row.dataset.editDone === 'true'
+    done: row.dataset.editDone === 'true',
+    ...entry
   }, loadRecent);
 });
 
 recentList.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.target.closest('[data-drag-handle]')) return;
   const row = e.target.closest('[data-edit-id]');
   if (!row) return;
   e.preventDefault();
@@ -331,7 +474,14 @@ recentList.addEventListener('keydown', (e) => {
 });
 
 requireAuth((user) => {
+  document.body.classList.remove('app-auth-pending');
+  document.body.classList.add('app-auth-ready');
   currentUser = user;
   userLabel.textContent = user.email || '';
   loadRecent();
 });
+
+recentList.addEventListener('pointerdown', handleDragPointerDown);
+recentList.addEventListener('pointermove', handleDragPointerMove);
+recentList.addEventListener('pointerup', handleDragPointerEnd);
+recentList.addEventListener('pointercancel', handleDragPointerEnd);

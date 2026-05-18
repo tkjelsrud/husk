@@ -6,12 +6,13 @@ import {
   doc,
   getDocs,
   getFirestore,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
-  where
+  where,
+  writeBatch
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+import { assignSequentialSortOrders, compareEntries, hasSortOrder, SORT_ORDER_STEP, sortEntries } from './lib/entry-order.js';
 
 const db = getFirestore(app);
 
@@ -31,7 +32,40 @@ export const ENTRY_PRIORITIES = [
   'high'
 ];
 
+async function fetchRegularEntries() {
+  const snapshot = await getDocs(query(collection(db, 'entries')));
+  const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+
+  return entries.filter((entry) => !entry.entryType || entry.entryType === 'regular');
+}
+
+async function ensureRegularEntriesHaveSortOrder(entries) {
+  if (entries.length === 0 || entries.every(hasSortOrder)) {
+    return sortEntries(entries);
+  }
+
+  const normalizedEntries = assignSequentialSortOrders(sortEntries(entries));
+  const batch = writeBatch(db);
+
+  normalizedEntries.forEach((entry) => {
+    batch.update(doc(db, 'entries', entry.id), { sortOrder: entry.sortOrder });
+  });
+
+  await batch.commit();
+  return normalizedEntries;
+}
+
+async function getRegularEntriesForOrdering() {
+  const entries = await fetchRegularEntries();
+  return ensureRegularEntriesHaveSortOrder(entries);
+}
+
 export async function addEntry({ textInput, category }, user) {
+  const entries = await getRegularEntriesForOrdering();
+  const maxActiveSortOrder = entries
+    .filter((entry) => entry.done !== true)
+    .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
+
   return addDoc(collection(db, 'entries'), {
     textInput,
     category,
@@ -42,27 +76,13 @@ export async function addEntry({ textInput, category }, user) {
     entryType: 'regular',
     addedByUid: user.uid,
     addedByEmail: user.email || '',
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
   });
 }
 
 export async function getEntries() {
-  // Get all entries (no entryType filter for backwards compatibility)
-  const entryQuery = query(collection(db, 'entries'));
-  const snapshot = await getDocs(entryQuery);
-  const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-  
-  // Filter in JavaScript: include 'regular' entries AND entries without entryType (old entries)
-  const regularEntries = entries.filter(entry => 
-    !entry.entryType || entry.entryType === 'regular'
-  );
-  
-  // Sort by createdAt (descending - newest first)
-  return regularEntries.sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() || 0;
-    const bTime = b.createdAt?.toMillis?.() || 0;
-    return bTime - aTime;
-  });
+  return getRegularEntriesForOrdering();
 }
 
 export async function getFixedEntries() {
@@ -87,23 +107,55 @@ export async function deleteEntry(entryId) {
 export async function updateEntry(entryId, { textInput, category }) {
   return updateDoc(doc(db, 'entries', entryId), { 
     textInput, 
-    category, 
-    createdAt: serverTimestamp() 
+    category 
   });
 }
 
 export async function markEntryDone(entryId) {
+  const entries = await getRegularEntriesForOrdering();
+  const lowestActiveSortOrder = entries
+    .filter((entry) => entry.id !== entryId && entry.done !== true)
+    .reduce((lowestOrder, entry) => Math.min(lowestOrder, entry.sortOrder), Infinity);
+  const nextSortOrder = Number.isFinite(lowestActiveSortOrder)
+    ? lowestActiveSortOrder - 1
+    : 0;
+
   return updateDoc(doc(db, 'entries', entryId), { 
     done: true, 
-    createdAt: serverTimestamp() 
+    sortOrder: nextSortOrder
   });
 }
 
 export async function markEntryNotDone(entryId) {
+  const entries = await getRegularEntriesForOrdering();
+  const maxActiveSortOrder = entries
+    .filter((entry) => entry.id !== entryId && entry.done !== true)
+    .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
+
   return updateDoc(doc(db, 'entries', entryId), { 
     done: false, 
-    createdAt: serverTimestamp() 
+    sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
   });
+}
+
+export async function saveRegularEntriesOrder(orderedEntryIds) {
+  const entries = await getRegularEntriesForOrdering();
+  const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
+  const remainingEntries = entries.filter((entry) => !orderedEntryIds.includes(entry.id));
+  const orderedEntries = orderedEntryIds
+    .map((entryId) => entriesById.get(entryId))
+    .filter(Boolean);
+  const normalizedEntries = assignSequentialSortOrders([
+    ...orderedEntries,
+    ...sortEntries(remainingEntries)
+  ]);
+  const batch = writeBatch(db);
+
+  normalizedEntries.forEach((entry) => {
+    batch.update(doc(db, 'entries', entry.id), { sortOrder: entry.sortOrder });
+  });
+
+  await batch.commit();
 }
 
 export async function addFixedEntry({ textInput, category, recurrence }, user) {
@@ -126,7 +178,6 @@ export async function updateFixedEntry(entryId, { textInput, category, recurrenc
   return updateDoc(doc(db, 'entries', entryId), { 
     textInput, 
     category,
-    recurrence: recurrence || { type: 'none' },
-    createdAt: serverTimestamp() 
+    recurrence: recurrence || { type: 'none' }
   });
 }

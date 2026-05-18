@@ -247,6 +247,8 @@ fixedList.addEventListener('keydown', (e) => {
 });
 
 requireAuth((user) => {
+  document.body.classList.remove('app-auth-pending');
+  document.body.classList.add('app-auth-ready');
   currentUser = user;
   userLabel.textContent = user.email || '';
   loadFixed();

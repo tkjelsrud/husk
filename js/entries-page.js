@@ -263,7 +263,7 @@ async function loadEntries() {
 
   try {
     currentEntries = await getEntries();
-renderEntries([...currentEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    renderEntries(currentEntries);
   } catch (err) {
     console.error(err);
     showStatus('danger', 'Kunne ikke laste listen.');
@@ -325,7 +325,8 @@ function handleEditClick(event) {
   if (event.target.closest('[data-done-entry-id]')) return;
   const card = event.target.closest('[data-edit-entry-id]');
   if (!card) return;
-  openEditModal({
+  const entry = currentEntries.find((item) => item.id === card.dataset.editEntryId);
+  openEditModal(entry || {
     id: card.dataset.editEntryId,
     textInput: card.dataset.editText,
     category: card.dataset.editCategory,
@@ -334,6 +335,8 @@ function handleEditClick(event) {
 }
 
 requireAuth((user) => {
+  document.body.classList.remove('app-auth-pending');
+  document.body.classList.add('app-auth-ready');
   userLabel.textContent = user.email || '';
   refreshButton.addEventListener('click', loadEntries);
   if (toggleHiddenButton) {

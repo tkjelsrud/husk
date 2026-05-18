@@ -68,6 +68,14 @@
       return `Innlogging feilet: ${code || 'ukjent feil'}. Sjekk nettleserkonsollen for detaljer.`;
     }
 
+    function shouldUseRedirectFallback(err) {
+      const code = String(err?.code || '');
+      return code === 'auth/popup-blocked'
+        || code === 'auth/popup-closed-by-user'
+        || code === 'auth/cancelled-popup-request'
+        || code === 'auth/web-storage-unsupported';
+    }
+
     function isIosStandaloneMode() {
       const standaloneByDisplayMode = window.matchMedia?.('(display-mode: standalone)').matches;
       const standaloneByNavigator = window.navigator.standalone === true;
@@ -86,7 +94,7 @@
     }
 
     try {
-      const [{ auth, loginWithGoogle, finalizeLoginRedirect, isAuthorizedUser, logout }, { onAuthStateChanged }] = await Promise.all([
+      const [{ auth, loginWithGoogle, loginWithGoogleRedirect, finalizeLoginRedirect, isAuthorizedUser, logout, waitForAuthReady }, { onAuthStateChanged }] = await Promise.all([
         import('./js/auth.js'),
         import('https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js')
       ]);
@@ -96,6 +104,11 @@
       } catch (err) {
         showError(getAuthErrorMessage(err));
         console.error(err);
+      }
+
+      const restoredUser = await waitForAuthReady();
+      if (restoredUser && await isAuthorizedUser(restoredUser)) {
+        window.location.href = 'dashboard.html';
       }
 
       onAuthStateChanged(auth, async (user) => {
@@ -111,6 +124,7 @@
 
       loginButton.addEventListener('click', async () => {
         errorMsg.classList.add('d-none');
+        loginButton.disabled = true;
         try {
           const result = await loginWithGoogle();
           if (result?.redirected) return;
@@ -120,8 +134,19 @@
           }
           window.location.href = 'dashboard.html';
         } catch (err) {
+          if (shouldUseRedirectFallback(err)) {
+            try {
+              await loginWithGoogleRedirect();
+              return;
+            } catch (redirectErr) {
+              showError(getAuthErrorMessage(redirectErr));
+              console.error(redirectErr);
+            }
+          }
           showError(getAuthErrorMessage(err));
           console.error(err);
+        } finally {
+          loginButton.disabled = false;
         }
       });
     } catch (err) {

@@ -4,6 +4,16 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+body.app-auth-pending main,
+body.app-auth-pending nav {
+  visibility: hidden;
+}
+
+body.app-auth-ready main,
+body.app-auth-ready nav {
+  visibility: visible;
+}
+
 .app-nav {
   background: #1d1d1b;
 }
@@ -427,6 +437,31 @@ body {
   gap: 0.75rem;
 }
 
+.entry-details-meta {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: 0.45rem 1rem;
+  margin: 0;
+}
+
+.entry-details-meta dt {
+  color: #7a6b56;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.entry-details-meta dd {
+  margin: 0;
+  color: #2b2a27;
+}
+
+.entry-details-json {
+  max-height: 320px;
+  overflow: auto;
+}
+
 .entry-card[data-edit-entry-id] {
   cursor: pointer;
 }
@@ -566,6 +601,27 @@ body {
   touch-action: pan-y; /* Allow vertical scrolling but enable horizontal swipe detection */
 }
 
+.recent-entry-handle {
+  border: 0;
+  background: transparent;
+  color: #8a7b66;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.1rem 0.2rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.recent-entry-handle:hover,
+.recent-entry-handle:focus {
+  color: #5b5246;
+}
+
+.recent-entry-dragging {
+  opacity: 0.72;
+  background: #ece6da;
+}
+
 .recent-entry-text {
   font-size: 0.95rem;
 }
@@ -589,6 +645,11 @@ body {
 }
 
 @media (max-width: 576px) {
+  .entry-details-meta {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
   .app-nav .container {
     min-height: auto;
     align-items: center;
