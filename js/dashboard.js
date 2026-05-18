@@ -453,6 +453,7 @@ if (recentFilterTabs) {
     const nextFilter = button.dataset.filterTab || 'general';
     if (nextFilter === activeRecentFilter) return;
 
+    collapseForm();
     activeRecentFilter = nextFilter;
     updateRecentFilterTabs();
     loadRecent();
