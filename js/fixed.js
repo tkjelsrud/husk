@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { addFixedEntry, getFixedEntries, deleteEntry, ENTRY_CATEGORIES } from './db.js';
+import { addFixedEntry, getFixedEntries, deleteEntry, isFirestoreAuthError, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 import { openFixedEditModal } from './fixed-edit-modal.js';
 
@@ -30,6 +30,18 @@ function showStatus(kind, message) {
   statusMsg.textContent = message;
   statusMsg.className = `alert alert-${kind}`;
   statusMsg.classList.remove('d-none');
+}
+
+function handleFirestoreError(err, fallbackMessage) {
+  console.error(err);
+
+  if (isFirestoreAuthError(err)) {
+    showStatus('warning', 'Innloggingen mangler eller har utlopet. Sender til login...');
+    setTimeout(() => logout(), 700);
+    return;
+  }
+
+  showStatus('danger', fallbackMessage);
 }
 
 // Show/hide recurrence options based on type
@@ -131,8 +143,7 @@ form.addEventListener('submit', async (event) => {
     textField.focus();
     loadFixed();
   } catch (err) {
-    console.error(err);
-    showStatus('danger', 'Kunne ikke lagre.');
+    handleFirestoreError(err, 'Kunne ikke lagre.');
   } finally {
     submitButton.disabled = false;
   }
@@ -215,7 +226,7 @@ async function loadFixed() {
       </div>`;
     }).join('');
   } catch (err) {
-    console.error(err);
+    handleFirestoreError(err, 'Kunne ikke laste faste paminnelser.');
   }
 }
 

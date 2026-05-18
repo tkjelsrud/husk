@@ -1,4 +1,5 @@
 import { app } from './firebase-config.js';
+import { auth } from './auth.js';
 import {
   addDoc,
   collection,
@@ -15,6 +16,24 @@ import {
 import { assignSequentialSortOrders, compareEntries, hasSortOrder, SORT_ORDER_STEP, sortEntries } from './lib/entry-order.js';
 
 const db = getFirestore(app);
+
+export function isFirestoreAuthError(err) {
+  const code = String(err?.code || '');
+  return code === 'permission-denied' || code === 'unauthenticated';
+}
+
+async function withFirestoreAuthRetry(operation) {
+  try {
+    return await operation();
+  } catch (err) {
+    if (!isFirestoreAuthError(err) || !auth.currentUser) {
+      throw err;
+    }
+
+    await auth.currentUser.getIdToken(true);
+    return operation();
+  }
+}
 
 export const ENTRY_CATEGORIES = [
   'unknown',
@@ -61,105 +80,114 @@ async function getRegularEntriesForOrdering() {
 }
 
 export async function addEntry({ textInput, category }, user) {
-  const entries = await getRegularEntriesForOrdering();
-  const maxActiveSortOrder = entries
-    .filter((entry) => entry.done !== true)
-    .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
+  return withFirestoreAuthRetry(async () => {
+    const entries = await getRegularEntriesForOrdering();
+    const maxActiveSortOrder = entries
+      .filter((entry) => entry.done !== true)
+      .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
 
-  return addDoc(collection(db, 'entries'), {
-    textInput,
-    category,
-    priority: 'normal',
-    processed: false,
-    done: false,
-    dueDate: null,
-    entryType: 'regular',
-    addedByUid: user.uid,
-    addedByEmail: user.email || '',
-    createdAt: serverTimestamp(),
-    sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
+    return addDoc(collection(db, 'entries'), {
+      textInput,
+      category,
+      priority: 'normal',
+      processed: false,
+      done: false,
+      dueDate: null,
+      entryType: 'regular',
+      addedByUid: user.uid,
+      addedByEmail: user.email || '',
+      createdAt: serverTimestamp(),
+      sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
+    });
   });
 }
 
 export async function getEntries() {
-  return getRegularEntriesForOrdering();
+  return withFirestoreAuthRetry(() => getRegularEntriesForOrdering());
 }
 
 export async function getFixedEntries() {
-  const entryQuery = query(
-    collection(db, 'entries'),
-    where('entryType', '==', 'fixed')
-  );
-  const snapshot = await getDocs(entryQuery);
-  const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-  // Sort by createdAt in JavaScript (descending - newest first)
-  return entries.sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() || 0;
-    const bTime = b.createdAt?.toMillis?.() || 0;
-    return bTime - aTime;
+  return withFirestoreAuthRetry(async () => {
+    const entryQuery = query(
+      collection(db, 'entries'),
+      where('entryType', '==', 'fixed')
+    );
+    const snapshot = await getDocs(entryQuery);
+    const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    return entries.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
   });
 }
 
 export async function deleteEntry(entryId) {
-  return deleteDoc(doc(db, 'entries', entryId));
+  return withFirestoreAuthRetry(() => deleteDoc(doc(db, 'entries', entryId)));
 }
 
 export async function updateEntry(entryId, { textInput, category }) {
-  return updateDoc(doc(db, 'entries', entryId), { 
-    textInput, 
-    category 
-  });
+  return withFirestoreAuthRetry(() => updateDoc(doc(db, 'entries', entryId), {
+    textInput,
+    category
+  }));
 }
 
 export async function markEntryDone(entryId) {
-  const entries = await getRegularEntriesForOrdering();
-  const lowestActiveSortOrder = entries
-    .filter((entry) => entry.id !== entryId && entry.done !== true)
-    .reduce((lowestOrder, entry) => Math.min(lowestOrder, entry.sortOrder), Infinity);
-  const nextSortOrder = Number.isFinite(lowestActiveSortOrder)
-    ? lowestActiveSortOrder - 1
-    : 0;
+  return withFirestoreAuthRetry(async () => {
+    const entries = await getRegularEntriesForOrdering();
+    const lowestActiveSortOrder = entries
+      .filter((entry) => entry.id !== entryId && entry.done !== true)
+      .reduce((lowestOrder, entry) => Math.min(lowestOrder, entry.sortOrder), Infinity);
+    const nextSortOrder = Number.isFinite(lowestActiveSortOrder)
+      ? lowestActiveSortOrder - 1
+      : 0;
 
-  return updateDoc(doc(db, 'entries', entryId), { 
-    done: true, 
-    sortOrder: nextSortOrder
+    return updateDoc(doc(db, 'entries', entryId), {
+      done: true,
+      sortOrder: nextSortOrder
+    });
   });
 }
 
 export async function markEntryNotDone(entryId) {
-  const entries = await getRegularEntriesForOrdering();
-  const maxActiveSortOrder = entries
-    .filter((entry) => entry.id !== entryId && entry.done !== true)
-    .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
+  return withFirestoreAuthRetry(async () => {
+    const entries = await getRegularEntriesForOrdering();
+    const maxActiveSortOrder = entries
+      .filter((entry) => entry.id !== entryId && entry.done !== true)
+      .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
 
-  return updateDoc(doc(db, 'entries', entryId), { 
-    done: false, 
-    sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
+    return updateDoc(doc(db, 'entries', entryId), {
+      done: false,
+      sortOrder: maxActiveSortOrder + SORT_ORDER_STEP
+    });
   });
 }
 
 export async function saveRegularEntriesOrder(orderedEntryIds) {
-  const entries = await getRegularEntriesForOrdering();
-  const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
-  const remainingEntries = entries.filter((entry) => !orderedEntryIds.includes(entry.id));
-  const orderedEntries = orderedEntryIds
-    .map((entryId) => entriesById.get(entryId))
-    .filter(Boolean);
-  const normalizedEntries = assignSequentialSortOrders([
-    ...orderedEntries,
-    ...sortEntries(remainingEntries)
-  ]);
-  const batch = writeBatch(db);
+  return withFirestoreAuthRetry(async () => {
+    const entries = await getRegularEntriesForOrdering();
+    const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
+    const remainingEntries = entries.filter((entry) => !orderedEntryIds.includes(entry.id));
+    const orderedEntries = orderedEntryIds
+      .map((entryId) => entriesById.get(entryId))
+      .filter(Boolean);
+    const normalizedEntries = assignSequentialSortOrders([
+      ...orderedEntries,
+      ...sortEntries(remainingEntries)
+    ]);
+    const batch = writeBatch(db);
 
-  normalizedEntries.forEach((entry) => {
-    batch.update(doc(db, 'entries', entry.id), { sortOrder: entry.sortOrder });
+    normalizedEntries.forEach((entry) => {
+      batch.update(doc(db, 'entries', entry.id), { sortOrder: entry.sortOrder });
+    });
+
+    await batch.commit();
   });
-
-  await batch.commit();
 }
 
 export async function addFixedEntry({ textInput, category, recurrence }, user) {
-  return addDoc(collection(db, 'entries'), {
+  return withFirestoreAuthRetry(() => addDoc(collection(db, 'entries'), {
     textInput,
     category,
     entryType: 'fixed',
@@ -171,13 +199,13 @@ export async function addFixedEntry({ textInput, category, recurrence }, user) {
     addedByUid: user.uid,
     addedByEmail: user.email || '',
     createdAt: serverTimestamp()
-  });
+  }));
 }
 
 export async function updateFixedEntry(entryId, { textInput, category, recurrence }) {
-  return updateDoc(doc(db, 'entries', entryId), { 
-    textInput, 
+  return withFirestoreAuthRetry(() => updateDoc(doc(db, 'entries', entryId), {
+    textInput,
     category,
     recurrence: recurrence || { type: 'none' }
-  });
+  }));
 }

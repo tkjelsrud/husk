@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { addEntry, getEntries, markEntryDone, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
+import { addEntry, getEntries, isFirestoreAuthError, markEntryDone, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
@@ -55,6 +55,18 @@ function showStatus(kind, message) {
   statusMsg.classList.remove('d-none');
 }
 
+function handleFirestoreError(err, fallbackMessage) {
+  console.error(err);
+
+  if (isFirestoreAuthError(err)) {
+    showStatus('warning', 'Innloggingen mangler eller har utlopet. Sender til login...');
+    setTimeout(() => logout(), 700);
+    return;
+  }
+
+  showStatus('danger', fallbackMessage);
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   statusMsg.classList.add('d-none');
@@ -93,8 +105,7 @@ form.addEventListener('submit', async (event) => {
     textField.focus();
     loadRecent();
   } catch (err) {
-    console.error(err);
-    showStatus('danger', 'Kunne ikke lagre.');
+    handleFirestoreError(err, 'Kunne ikke lagre.');
   } finally {
     submitButton.disabled = false;
   }
@@ -203,7 +214,7 @@ async function persistDraggedOrder() {
   const reorderedActiveIds = renderedIds.filter((entryId) => activeRenderedIds.includes(entryId));
   const nextOrderedEntries = buildEntryOrderWithUpdatedFilteredIds(reorderedActiveIds);
 
-  currentEntries = sortEntries(nextOrderedEntries);
+  currentEntries = nextOrderedEntries;
   await saveRegularEntriesOrder(currentEntries.map((entry) => entry.id));
 }
 
@@ -404,7 +415,7 @@ async function loadRecent() {
     // Attach swipe gesture handlers after rendering
     attachSwipeHandlers();
   } catch (err) {
-    console.error(err);
+    handleFirestoreError(err, 'Kunne ikke laste notater.');
   }
 }
 

@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { deleteEntry, getEntries, markEntryDone } from './db.js';
+import { deleteEntry, getEntries, isFirestoreAuthError, markEntryDone } from './db.js';
 import { shouldHideEntry } from './lib/entries-filter.js';
 import { openEditModal } from './edit-modal.js';
 
@@ -25,6 +25,18 @@ function showStatus(kind, message) {
 
 function hideStatus() {
   statusMsg.classList.add('d-none');
+}
+
+function handleFirestoreError(err, fallbackMessage) {
+  console.error(err);
+
+  if (isFirestoreAuthError(err)) {
+    showStatus('warning', 'Innloggingen mangler eller har utlopet. Sender til login...');
+    setTimeout(() => logout(), 700);
+    return;
+  }
+
+  showStatus('danger', fallbackMessage);
 }
 
 function renderEntries(entries) {
@@ -265,8 +277,7 @@ async function loadEntries() {
     currentEntries = await getEntries();
     renderEntries(currentEntries);
   } catch (err) {
-    console.error(err);
-    showStatus('danger', 'Kunne ikke laste listen.');
+    handleFirestoreError(err, 'Kunne ikke laste listen.');
     entriesDesktopList.innerHTML = '<div class="text-muted py-3">Kunne ikke laste listen.</div>';
     entriesList.innerHTML = '<div class="text-muted py-3">Kunne ikke laste listen.</div>';
   } finally {
@@ -290,8 +301,7 @@ async function handleDeleteClick(event) {
     showStatus('success', 'Notatet ble slettet.');
     await loadEntries();
   } catch (err) {
-    console.error(err);
-    showStatus('danger', 'Kunne ikke slette notatet.');
+    handleFirestoreError(err, 'Kunne ikke slette notatet.');
     deleteButton.disabled = false;
   }
 }
@@ -309,8 +319,7 @@ async function handleMarkDoneClick(event) {
     await markEntryDone(entryId);
     await loadEntries();
   } catch (err) {
-    console.error(err);
-    showStatus('danger', 'Kunne ikke markere som ferdig.');
+    handleFirestoreError(err, 'Kunne ikke markere som ferdig.');
     doneButton.disabled = false;
   }
 }
