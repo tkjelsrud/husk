@@ -264,6 +264,9 @@ def _extract_due_date(text_input: str, now: datetime):
     if norwegian_match:
         day = int(norwegian_match.group(1))
         month = int(norwegian_match.group(2))
+        # Validate month and day to avoid matching times like 18.00
+        if not (1 <= month <= 12 and 1 <= day <= 31):
+            return None
         year = norwegian_match.group(3)
         if year is None:
             year_value = now.year
