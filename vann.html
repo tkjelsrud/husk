@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vann</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body class="water-page-body">
+  <main class="water-page-shell container py-4 py-md-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-7 col-xl-6">
+        <section class="card water-card">
+          <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+              <div>
+                <p class="eyebrow mb-2">I dag</p>
+                <h1 class="h3 mb-1">Vann</h1>
+                <p class="text-muted mb-0">En enkel teller for dagens drikke.</p>
+              </div>
+              <span id="water-date-pill" class="date-pill"></span>
+            </div>
+
+            <section class="water-summary mb-4" aria-live="polite">
+              <div>
+                <p class="water-summary-label mb-1">Totalt</p>
+                <div class="water-total-row">
+                  <span id="water-total-liters" class="water-total-value">0,00 L</span>
+                  <span id="water-target-badge" class="water-target-badge">Under mal</span>
+                </div>
+                <p class="text-muted mb-0">Mal: ca. 1,5 L drikke per dag, omtrent 6-8 glass.</p>
+              </div>
+              <div class="water-progress" aria-hidden="true">
+                <div id="water-progress-bar" class="water-progress-bar"></div>
+              </div>
+            </section>
+
+            <section class="water-counter-card mb-3" aria-labelledby="water-glass-heading">
+              <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+                <div>
+                  <h2 id="water-glass-heading" class="h6 mb-1">Glass</h2>
+                  <p class="text-muted mb-0">0,25 L per glass</p>
+                </div>
+                <span id="water-glass-count" class="water-counter-value">0 / 8</span>
+              </div>
+              <div id="water-glass-buttons" class="water-button-grid" role="group" aria-label="Velg antall glass"></div>
+            </section>
+
+            <section class="water-counter-card" aria-labelledby="water-bottle-heading">
+              <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+                <div>
+                  <h2 id="water-bottle-heading" class="h6 mb-1">Flasker</h2>
+                  <p class="text-muted mb-0">0,5 L per flaske</p>
+                </div>
+                <span id="water-bottle-count" class="water-counter-value">0 / 5</span>
+              </div>
+              <div id="water-bottle-buttons" class="water-button-grid water-button-grid-bottles" role="group" aria-label="Velg antall flasker"></div>
+            </section>
+
+            <div class="d-flex justify-content-between align-items-center gap-3 mt-4 flex-wrap">
+              <p class="water-helper-text mb-0">Telles lokalt pa denne enheten og nullstilles automatisk hver dag.</p>
+              <button id="water-reset-btn" type="button" class="btn btn-outline-secondary btn-sm">Nullstill i dag</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./js/vann.js"></script>
+</body>
+</html>
