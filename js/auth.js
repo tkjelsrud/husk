@@ -53,8 +53,10 @@ export async function finalizeLoginRedirect() {
   return getRedirectResult(auth);
 }
 
-export async function loginWithGoogle() {
-  await authSetup;
+export function loginWithGoogle() {
+  // Must not await before signInWithPopup: Safari blocks popups opened after
+  // any async operation in the user-gesture handler. authSetup resolves at
+  // module load time (well before any user click), so skipping the await here is safe.
   return signInWithPopup(auth, provider);
 }
 
@@ -131,7 +133,17 @@ export function requireAuth(initFn) {
 
     initIfNeeded(user);
   }, (err) => {
-    console.error(err);
-    redirectToIndex();
+    // Only redirect on definitive auth errors, not transient network failures.
+    // A 403 from a restricted API key or a brief network drop should not log out the user.
+    const code = String(err?.code || '');
+    const isAuthError = code.startsWith('auth/') &&
+      code !== 'auth/network-request-failed' &&
+      code !== 'auth/too-many-requests';
+    if (isAuthError) {
+      console.error('Auth error, redirecting to login:', err);
+      redirectToIndex();
+    } else {
+      console.warn('Transient auth listener error (not logging out):', err);
+    }
   });
 }

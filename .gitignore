@@ -7,3 +7,4 @@ backend/.secrets/
 backend/.state/
 js/firebase-config.js
 js/runtime-config.js
+security/results/
