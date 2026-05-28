@@ -198,7 +198,7 @@
 
 <script type="module">
 import { parseAxiom } from './js/lib/axiom-parser.js';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+import { app } from './js/firebase-config.js';
 import {
   getAuth,
   onAuthStateChanged,
@@ -211,16 +211,6 @@ import {
   getDocs
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyATHuEbCN2SJMBEg77-dYKbXnJCZn285Rk',
-  authDomain: 'husk-f59b1.firebaseapp.com',
-  projectId: 'husk-f59b1',
-  storageBucket: 'husk-f59b1.firebasestorage.app',
-  messagingSenderId: '183330326351',
-  appId: '1:183330326351:web:a53fc5b2a1fa159e32e73a'
-};
-
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
