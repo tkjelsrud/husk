@@ -39,3 +39,28 @@ test('validateCategory accepts allowed category', () => {
 test('validateCategory accepts huskmcp category when allowed', () => {
   assert.deepEqual(validateCategory('huskmcp', ['unknown', 'huskmcp']), { ok: true });
 });
+
+test('validateCategory accepts axiom category when included in allowed list', () => {
+  const categories = ['unknown', 'work', 'creative', 'houseproj', 'family', 'general', 'huskmcp', 'axiom'];
+  assert.deepEqual(validateCategory('axiom', categories), { ok: true });
+});
+
+test('validateCategory rejects axiom when not in allowed list', () => {
+  assert.deepEqual(validateCategory('axiom', ['unknown', 'work']), {
+    ok: false,
+    message: 'Velg en gyldig kategori.'
+  });
+});
+
+test('validateEntryText accepts multi-line axiom text with attribution', () => {
+  const axiom = 'If I had an hour to solve a problem\nI would spend 55 minutes on the problem.\n~ Albert Einstein';
+  assert.deepEqual(validateEntryText(axiom), { ok: true });
+});
+
+test('validateEntryText rejects axiom text exceeding five lines', () => {
+  const tooLong = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n~ Source';
+  assert.deepEqual(validateEntryText(tooLong), {
+    ok: false,
+    message: 'Bruk maks 5 linjer.'
+  });
+});

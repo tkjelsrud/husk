@@ -33,6 +33,7 @@ function buildDialog() {
           <option value="family">Familie</option>
           <option value="general">Generelt</option>
           <option value="huskmcp">Husk MCP</option>
+          <option value="axiom">Aksiomat</option>
         </select>
       </div>
       <div class="edit-dialog-footer mt-4">

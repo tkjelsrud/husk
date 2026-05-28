@@ -42,7 +42,8 @@ export const ENTRY_CATEGORIES = [
   'houseproj',
   'family',
   'general',
-  'huskmcp'
+  'huskmcp',
+  'axiom'
 ];
 
 export const ENTRY_PRIORITIES = [

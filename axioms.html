@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Axioms</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f4ef;
+      --text: #1a1a1a;
+      --muted: #888;
+      --accent: #1a1a1a;
+      --progress-h: 3px;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, 'Palatino Linotype', serif;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Progress bar */
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: var(--progress-h);
+      width: 0%;
+      background: var(--accent);
+      z-index: 10;
+      transition: width linear;
+    }
+
+    /* Counter top-right */
+    #counter {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      z-index: 10;
+    }
+
+    /* Main stage */
+    #stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 2rem 4rem;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+
+    /* Axiom card — slides in/out */
+    #axiom-card {
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      will-change: transform, opacity;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+
+    #axiom-card.exit-left  { transform: translateX(-120%); opacity: 0; }
+    #axiom-card.exit-right { transform: translateX(120%);  opacity: 0; }
+    #axiom-card.enter-left {
+      transform: translateX(120%); opacity: 0;
+      transition: none;
+    }
+    #axiom-card.enter-right {
+      transform: translateX(-120%); opacity: 0;
+      transition: none;
+    }
+    #axiom-card.visible {
+      transform: translateX(0); opacity: 1;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+
+    #axiom-text {
+      font-size: clamp(1.25rem, 5vw, 1.9rem);
+      line-height: 1.65;
+      font-style: italic;
+      letter-spacing: 0.01em;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #axiom-source {
+      margin-top: 1.5rem;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      font-style: normal;
+    }
+
+    /* Nav dots */
+    #dots {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ccc;
+      transition: background 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+
+    /* Loading / empty states */
+    #loading, #empty {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, sans-serif;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    #login-prompt {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      font-family: -apple-system, sans-serif;
+    }
+
+    #login-prompt p { font-size: 0.9rem; color: var(--muted); }
+
+    #login-btn {
+      padding: 0.6rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: -apple-system, sans-serif;
+      letter-spacing: 0.04em;
+    }
+
+    #login-btn:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="counter"></div>
+
+<div id="loading">Laster...</div>
+<div id="empty" style="display:none">Ingen aksiomat funnet</div>
+
+<div id="login-prompt" style="display:none">
+  <p>Logg inn for å se aksiomat</p>
+  <button id="login-btn">Logg inn med Google</button>
+</div>
+
+<div id="stage" style="display:none">
+  <div id="axiom-card">
+    <div id="axiom-text"></div>
+    <div id="axiom-source"></div>
+  </div>
+</div>
+
+<div id="dots" style="display:none"></div>
+
+<script type="module">
+import { parseAxiom } from './js/lib/axiom-parser.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+import {
+  getAuth,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
+import {
+  getFirestore,
+  collection,
+  getDocs
+} from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyATHuEbCN2SJMBEg77-dYKbXnJCZn285Rk',
+  authDomain: 'husk-f59b1.firebaseapp.com',
+  projectId: 'husk-f59b1',
+  storageBucket: 'husk-f59b1.firebasestorage.app',
+  messagingSenderId: '183330326351',
+  appId: '1:183330326351:web:a53fc5b2a1fa159e32e73a'
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── DOM refs ──────────────────────────────────────────────
+const progressBar  = document.getElementById('progress-bar');
+const counter      = document.getElementById('counter');
+const stage        = document.getElementById('stage');
+const axiomCard    = document.getElementById('axiom-card');
+const axiomText    = document.getElementById('axiom-text');
+const axiomSource  = document.getElementById('axiom-source');
+const dotsEl       = document.getElementById('dots');
+const loadingEl    = document.getElementById('loading');
+const emptyEl      = document.getElementById('empty');
+const loginPrompt  = document.getElementById('login-prompt');
+const loginBtn     = document.getElementById('login-btn');
+
+// ── State ─────────────────────────────────────────────────
+let axioms       = [];
+let order        = [];
+let current      = 0;
+let timerHandle  = null;
+let progressHandle = null;
+let progressStart  = null;
+const INTERVAL_MS  = 10000;
+
+// ── Auth ──────────────────────────────────────────────────
+loginBtn.addEventListener('click', () => {
+  signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
+});
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    loginPrompt.style.display = 'none';
+    loadAxioms();
+  } else {
+    loadingEl.style.display = 'none';
+    loginPrompt.style.display = '';
+  }
+});
+
+// ── Data ──────────────────────────────────────────────────
+async function loadAxioms() {
+  try {
+    const snap = await getDocs(collection(db, 'entries'));
+    axioms = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(e =>
+        e.category === 'axiom' &&
+        !e.done &&
+        (!e.entryType || e.entryType === 'regular')
+      );
+
+    loadingEl.style.display = 'none';
+
+    if (axioms.length === 0) {
+      emptyEl.style.display = '';
+      return;
+    }
+
+    order = shuffle([...Array(axioms.length).keys()]);
+    current = 0;
+    buildDots();
+    stage.style.display = '';
+    dotsEl.style.display = '';
+    showAxiom(0, 'enter-right');
+    startTimer();
+  } catch (err) {
+    console.error(err);
+    loadingEl.textContent = 'Feil ved lasting';
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── Rendering ─────────────────────────────────────────────
+function showAxiom(idx, enterDir) {
+  const axiom = axioms[order[idx]];
+  const { quote, source } = parseAxiom(axiom.textInput || '');
+
+  axiomText.textContent   = quote;
+  axiomSource.textContent = source;
+
+  axiomCard.className = enterDir;
+  void axiomCard.offsetWidth; // force reflow
+  axiomCard.className = 'visible';
+
+  updateDots(idx);
+  updateCounter(idx);
+}
+
+function navigate(dir) {
+  const exitClass  = dir === 'next' ? 'exit-left' : 'exit-right';
+  const enterClass = dir === 'next' ? 'enter-left' : 'enter-right';
+
+  axiomCard.className = exitClass;
+
+  setTimeout(() => {
+    if (dir === 'next') {
+      current = (current + 1) % axioms.length;
+      if (current === 0) order = shuffle([...Array(axioms.length).keys()]);
+    } else {
+      current = (current - 1 + axioms.length) % axioms.length;
+    }
+    showAxiom(current, enterClass);
+  }, 350);
+
+  resetTimer();
+}
+
+// ── Dots ──────────────────────────────────────────────────
+function buildDots() {
+  dotsEl.innerHTML = '';
+  const max = Math.min(axioms.length, 15);
+  for (let i = 0; i < max; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  }
+}
+
+function updateDots(idx) {
+  const shown = Math.min(axioms.length, 15);
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i === (idx % shown));
+  });
+}
+
+function updateCounter(idx) {
+  counter.textContent = `${idx + 1} / ${axioms.length}`;
+}
+
+// ── Timer + progress ──────────────────────────────────────
+function startTimer() {
+  clearTimeout(timerHandle);
+  cancelAnimationFrame(progressHandle);
+
+  progressStart = performance.now();
+  animateProgress();
+
+  timerHandle = setTimeout(() => navigate('next'), INTERVAL_MS);
+}
+
+function resetTimer() {
+  startTimer();
+}
+
+function animateProgress() {
+  const elapsed = performance.now() - progressStart;
+  const pct = Math.min((elapsed / INTERVAL_MS) * 100, 100);
+  progressBar.style.width = pct + '%';
+  progressBar.style.transition = 'none';
+  if (elapsed < INTERVAL_MS) {
+    progressHandle = requestAnimationFrame(animateProgress);
+  }
+}
+
+// ── Tap to advance ────────────────────────────────────────
+stage.addEventListener('click', () => navigate('next'));
+
+// ── Swipe ─────────────────────────────────────────────────
+let touchStartX = null;
+let touchStartY = null;
+
+stage.addEventListener('touchstart', (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+stage.addEventListener('touchend', (e) => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+    e.preventDefault();
+    navigate(dx < 0 ? 'next' : 'prev');
+  }
+  touchStartX = null;
+  touchStartY = null;
+}, { passive: false });
+
+// ── Keyboard (desktop) ────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') navigate('next');
+  if (e.key === 'ArrowLeft') navigate('prev');
+});
+</script>
+</body>
+</html>

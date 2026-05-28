@@ -60,3 +60,27 @@ test('shouldHideEntry hides old or past-due entries only', () => {
     false
   );
 });
+
+test('shouldHideEntry hides done axiom entries', () => {
+  const now = new Date('2026-04-27T12:00:00Z');
+  assert.equal(
+    shouldHideEntry({ category: 'axiom', done: true, createdAt: '2026-04-27T12:00:00Z' }, now),
+    true
+  );
+});
+
+test('shouldHideEntry keeps recent axiom entries visible', () => {
+  const now = new Date('2026-04-27T12:00:00Z');
+  assert.equal(
+    shouldHideEntry({ category: 'axiom', done: false, createdAt: '2026-04-27T12:00:00Z' }, now),
+    false
+  );
+});
+
+test('shouldHideEntry hides axiom entries older than threshold', () => {
+  const now = new Date('2026-04-27T12:00:00Z');
+  assert.equal(
+    shouldHideEntry({ category: 'axiom', done: false, createdAt: '2026-04-01T12:00:00Z' }, now),
+    true
+  );
+});

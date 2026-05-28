@@ -3,6 +3,7 @@ import { addEntry, getEntries, isFirestoreAuthError, markEntryDone, saveRegularE
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
+import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
 
 const recentSection = document.getElementById('recent-section');
 const recentList = document.getElementById('recent-list');
@@ -419,20 +420,8 @@ async function loadRecent() {
   }
 }
 
-function hasFixedCalendarDate(entry) {
-  return Boolean(entry?.dueDate);
-}
-
 function matchesRecentFilter(entry) {
-  if (activeRecentFilter === 'calendar') {
-    return hasFixedCalendarDate(entry);
-  }
-
-  if (activeRecentFilter === 'work') {
-    return entry?.category === 'work' && !hasFixedCalendarDate(entry);
-  }
-
-  return entry?.category !== 'work' && !hasFixedCalendarDate(entry);
+  return _matchesRecentFilter(entry, activeRecentFilter);
 }
 
 function updateRecentFilterTabs() {
