@@ -84,6 +84,12 @@
       return isIOSDevice && (standaloneByDisplayMode || standaloneByNavigator);
     }
 
+    function isMobileDevice() {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent || '')
+        || window.matchMedia?.('(pointer: coarse)').matches
+        || isIosStandaloneMode();
+    }
+
     if (isIosStandaloneMode()) {
       standaloneMsg.classList.remove('d-none');
     }
@@ -126,6 +132,10 @@
         errorMsg.classList.add('d-none');
         loginButton.disabled = true;
         try {
+          if (isMobileDevice()) {
+            await loginWithGoogleRedirect();
+            return;
+          }
           const result = await loginWithGoogle();
           if (result?.redirected) return;
           if (!await isAuthorizedUser(auth.currentUser)) {
