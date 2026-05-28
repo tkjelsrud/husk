@@ -25,7 +25,8 @@ service cloud.firestore {
           'houseproj',
           'family',
           'general',
-          'huskmcp'
+          'huskmcp',
+          'axiom'
         ]
         && request.resource.data.priority in ['low', 'normal', 'high']
         && request.resource.data.addedByUid == request.auth.uid
