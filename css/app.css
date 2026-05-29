@@ -815,8 +815,17 @@ body.app-auth-ready nav {
   .app-nav .container {
     min-height: auto;
     align-items: center;
-    padding-top: 0.45rem;
-    padding-bottom: 0.45rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .navbar-brand {
+    font-size: 0.85rem;
+  }
+
+  .app-nav-compact .nav-link,
+  .app-nav-compact .btn {
+    font-size: 0.82rem;
   }
 
   .navbar .container {
@@ -863,6 +872,17 @@ body.app-auth-ready nav {
   .entries-filter-summary {
     white-space: normal;
     text-align: right;
+  }
+
+  .recent-entry {
+    min-height: 3rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .recent-entry-handle {
+    font-size: 1.1rem;
+    padding: 0.2rem 0.35rem;
   }
 
   .entry-card-header {
