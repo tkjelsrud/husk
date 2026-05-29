@@ -14,6 +14,7 @@ import {
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import { assignSequentialSortOrders, compareEntries, hasSortOrder, SORT_ORDER_STEP, sortEntries } from './lib/entry-order.js';
+import { needsBackendProcessing } from './lib/entry-validation.js';
 
 const db = getFirestore(app);
 
@@ -87,15 +88,11 @@ export async function addEntry({ textInput, category }, user) {
       .filter((entry) => entry.done !== true)
       .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
 
-    // Entries with an explicit non-family category need no backend processing.
-    // family needs backend for calendar sync; unknown needs backend for AI classification.
-    const needsBackend = !category || category === 'unknown' || category === 'family';
-
     return addDoc(collection(db, 'entries'), {
       textInput,
       category,
       priority: 'normal',
-      processed: !needsBackend,
+      processed: !needsBackendProcessing(category),
       done: false,
       dueDate: null,
       entryType: 'regular',

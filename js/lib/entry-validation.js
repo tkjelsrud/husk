@@ -27,3 +27,11 @@ export function validateCategory(value, allowedCategories) {
 
   return { ok: true };
 }
+
+// Returns true when the backend processor must handle the entry.
+// family: backend syncs to Google Calendar.
+// unknown: backend would classify (kept for safety; UI always sets a category).
+// Everything else: user set an explicit category, mark processed immediately.
+export function needsBackendProcessing(category) {
+  return !category || category === 'unknown' || category === 'family';
+}
