@@ -87,11 +87,15 @@ export async function addEntry({ textInput, category }, user) {
       .filter((entry) => entry.done !== true)
       .reduce((maxOrder, entry) => Math.max(maxOrder, entry.sortOrder || 0), 0);
 
+    // Entries with an explicit non-family category need no backend processing.
+    // family needs backend for calendar sync; unknown needs backend for AI classification.
+    const needsBackend = !category || category === 'unknown' || category === 'family';
+
     return addDoc(collection(db, 'entries'), {
       textInput,
       category,
       priority: 'normal',
-      processed: false,
+      processed: !needsBackend,
       done: false,
       dueDate: null,
       entryType: 'regular',

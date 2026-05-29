@@ -5,110 +5,12 @@ from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .calendar_client import sync_calendar_event
-from .model_client import classify_entry
 from .schemas import ENTRY_CATEGORIES, ENTRY_PRIORITIES
 
 
 PROCESSOR_VERSION = 'husk-backend-v1'
 DEFAULT_TIMEZONE = ZoneInfo('Europe/Oslo')
 DEFAULT_DUE_HOUR = 8
-
-CATEGORY_HINTS = {
-    'work': [
-        'work',
-        'jobb',
-        'mote',
-        'meeting',
-        'kunde',
-        'customer',
-        'office',
-        'kontor',
-        'deadline',
-        'jira',
-        'slack',
-        'teams',
-        'epost',
-        'email',
-        'prosjekt',
-        'project',
-        'arbeid',
-        'kollega',
-        'manager',
-        'leder',
-    ],
-    'creative': [
-        'creative',
-        'kreativ',
-        'skrive',
-        'write',
-        'art',
-        'design',
-        'tegne',
-        'draw',
-        'male',
-        'paint',
-        'music',
-        'musikk',
-        'foto',
-        'photo',
-        'video',
-        'podcast',
-    ],
-    'houseproj': [
-        'houseproj',
-        'husprosjekt',
-        'oppussing',
-        'renovation',
-        'bygg',
-        'build',
-        'snekker',
-        'electrician',
-        'elektriker',
-        'plumber',
-        'rorlegger',
-        'bad',
-        'kjokken',
-        'kitchen',
-        'garage',
-        'garasje',
-        'tak',
-        'roof',
-    ],
-    'family': [
-        'family',
-        'familie',
-        'barn',
-        'kids',
-        'school',
-        'skole',
-        'barnehage',
-        'foreldre',
-        'parents',
-        'birthday',
-        'bursdag',
-        'anita',
-        'sebastian',
-        'verona',
-    ],
-    'general': [
-        'general',
-        'generelt',
-        'ordne',
-        'fix',
-        'kjop',
-        'buy',
-        'handle',
-        'remember',
-        'husk',
-        'todo',
-        'to do',
-    ],
-    'huskmcp': [
-        'husk mcp',
-        'huskmcp',
-        'mcp',
-    ],
-}
 
 HIGH_PRIORITY_HINTS = [
     'important',
@@ -120,27 +22,15 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
     text_input = str(entry.get('textInput', '')).strip()
     now = datetime.now(DEFAULT_TIMEZONE)
 
-    rule_due_date = _extract_due_date(text_input, now)
-    rule_priority = _extract_priority(text_input)
-    rule_category = _extract_category(text_input)
-
-    model_result = classify_entry(
-        opencode_bin=settings.opencode_bin,
-        model=settings.opencode_model,
-        text_input=text_input,
-        current_time=now.isoformat(),
-    )
-
-    model_due_date = _normalize_due_date(model_result.get('dueDate'))
-    category = _normalize_category(rule_category or model_result.get('category'))
-    priority = _normalize_priority(rule_priority or model_result.get('priority'))
-    due_date = rule_due_date or model_due_date
+    due_date = _extract_due_date(text_input, now)
+    priority = _normalize_priority(_extract_priority(text_input))
+    category = _normalize_category(entry.get('category'))
 
     payload = {
         'category': category,
         'priority': priority,
         'dueDate': due_date,
-        'processingSummary': str(model_result.get('summary', '')).strip(),
+        'processingSummary': '',
         'processorVersion': PROCESSOR_VERSION,
         'lastError': firestore_delete(),
         'lastTriedAt': firestore_delete(),
@@ -159,24 +49,16 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
         'processedAtLocal': now.isoformat(),
         'inputText': text_input,
         'rules': {
-            'category': rule_category,
-            'priority': rule_priority,
-            'dueDate': rule_due_date.isoformat() if rule_due_date else None,
-        },
-        'modelOutput': {
-            'category': model_result.get('category'),
-            'priority': model_result.get('priority'),
-            'dueDate': model_due_date.isoformat() if model_due_date else model_result.get('dueDate'),
-            'summary': str(model_result.get('summary', '')).strip(),
+            'priority': priority,
+            'dueDate': due_date.isoformat() if due_date else None,
         },
         'final': {
             'category': category,
             'priority': priority,
             'dueDate': due_date.isoformat() if due_date else None,
-            'processingSummary': payload['processingSummary'],
         },
         'calendar': {
-            'eligible': category != 'work' and due_date is not None,
+            'eligible': category == 'family' and due_date is not None,
             'status': calendar_result.get('calendarSyncStatus'),
             'eventCreated': calendar_result.get('calendarEventCreated', False),
             'eventId': calendar_result.get('calendarEventId'),
@@ -223,20 +105,6 @@ def _normalize_due_date(value):
             return _at_default_time(parsed.date())
         return parsed.replace(tzinfo=DEFAULT_TIMEZONE)
     return parsed.astimezone(DEFAULT_TIMEZONE)
-
-
-def _extract_category(text_input: str):
-    lowered = text_input.lower()
-
-    # Work gets priority because it will later feed work-side agents.
-    if any(hint in lowered for hint in CATEGORY_HINTS['work']):
-        return 'work'
-
-    for category in ('creative', 'houseproj', 'family', 'general', 'huskmcp'):
-        if any(hint in lowered for hint in CATEGORY_HINTS[category]):
-            return category
-
-    return None
 
 
 def _extract_priority(text_input: str):
