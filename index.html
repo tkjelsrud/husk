@@ -105,33 +105,10 @@
         import('https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js')
       ]);
 
-      try {
-        await finalizeLoginRedirect();
-      } catch (err) {
-        showError(getAuthErrorMessage(err));
-        console.error(err);
-      }
-
-      const restoredUser = await waitForAuthReady();
-      if (restoredUser && await isAuthorizedUser(restoredUser)) {
-        window.location.href = 'dashboard.html';
-      }
-
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) return;
-
-        if (!await isAuthorizedUser(user)) {
-          await logout('unauthorized');
-          return;
-        }
-
-        window.location.href = 'dashboard.html';
-      });
-
+      // Register click handler immediately after imports — before any auth awaits.
+      // waitForAuthReady() can take several seconds on mobile; if we wait for it
+      // first the button has no handler and silently does nothing when tapped.
       loginButton.addEventListener('click', () => {
-        // signInWithPopup must be the very first call — no await, no DOM mutation
-        // before this. Safari cancels the popup if the gesture context is broken
-        // by any async operation or microtask (even a resolved one) before window.open.
         const authPromise = loginWithGoogle();
         errorMsg.classList.add('d-none');
         loginButton.disabled = true;
@@ -161,6 +138,29 @@
           .finally(() => {
             loginButton.disabled = false;
           });
+      });
+
+      try {
+        await finalizeLoginRedirect();
+      } catch (err) {
+        showError(getAuthErrorMessage(err));
+        console.error(err);
+      }
+
+      const restoredUser = await waitForAuthReady();
+      if (restoredUser && await isAuthorizedUser(restoredUser)) {
+        window.location.href = 'dashboard.html';
+      }
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) return;
+
+        if (!await isAuthorizedUser(user)) {
+          await logout('unauthorized');
+          return;
+        }
+
+        window.location.href = 'dashboard.html';
       });
     } catch (err) {
       loginButton.disabled = true;
