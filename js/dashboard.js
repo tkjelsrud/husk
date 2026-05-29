@@ -128,7 +128,7 @@ function formatShortDate(value) {
   if (!value) return '';
   const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('nb-NO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date);
+  return new Intl.DateTimeFormat('nb-NO', { day: '2-digit', month: '2-digit' }).format(date);
 }
 
 // Swipe gesture handling
