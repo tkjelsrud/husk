@@ -629,6 +629,26 @@ body.app-auth-ready nav {
   gap: 0.3rem;
 }
 
+.cleanup-row {
+  text-align: center;
+  padding-top: 0.6rem;
+}
+
+.cleanup-link {
+  border: 0;
+  background: transparent;
+  color: #9a8c7a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+}
+
+.cleanup-link:hover,
+.cleanup-link:focus {
+  color: #6a5233;
+  text-decoration: underline;
+}
+
 .folder-tabs {
   display: flex;
   align-items: flex-end;

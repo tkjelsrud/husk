@@ -1,5 +1,5 @@
 import { logout, requireAuth } from './auth.js';
-import { addEntry, getEntries, isFirestoreAuthError, markEntryDone, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
+import { addEntry, getEntries, isFirestoreAuthError, markEntryDone, deleteEntry, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
@@ -415,6 +415,22 @@ async function loadRecent() {
     
     // Attach swipe gesture handlers after rendering
     attachSwipeHandlers();
+
+    const doneEntries = currentFilteredEntries.filter(e => e.done === true);
+    if (doneEntries.length > 0) {
+      const cleanupRow = document.createElement('div');
+      cleanupRow.className = 'cleanup-row';
+      cleanupRow.innerHTML = `<button class="cleanup-link" type="button">rydd opp</button>`;
+      cleanupRow.querySelector('.cleanup-link').addEventListener('click', async () => {
+        try {
+          await Promise.all(doneEntries.map(e => deleteEntry(e.id)));
+          loadRecent();
+        } catch (err) {
+          console.error('Cleanup failed:', err);
+        }
+      });
+      recentList.appendChild(cleanupRow);
+    }
   } catch (err) {
     handleFirestoreError(err, 'Kunne ikke laste notater.');
   }
