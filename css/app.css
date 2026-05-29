@@ -875,14 +875,18 @@ body.app-auth-ready nav {
   }
 
   .recent-entry {
-    min-height: 3rem;
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
+    font-size: 1.05rem;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+  }
+
+  .recent-entry-text {
+    font-size: 1.05rem;
   }
 
   .recent-entry-handle {
     font-size: 1.1rem;
-    padding: 0.2rem 0.35rem;
+    padding: 0.25rem 0.4rem;
   }
 
   .entry-card-header {
