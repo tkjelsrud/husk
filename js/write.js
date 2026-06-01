@@ -229,6 +229,15 @@ backBtn.addEventListener('click', () => {
   renderDocList(currentDocs);
 });
 
+editContent.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  e.preventDefault();
+  const start = editContent.selectionStart;
+  const end = editContent.selectionEnd;
+  editContent.value = editContent.value.slice(0, start) + '  ' + editContent.value.slice(end);
+  editContent.selectionStart = editContent.selectionEnd = start + 2;
+});
+
 requireAuth((user) => {
   document.body.classList.remove('app-auth-pending');
   document.body.classList.add('app-auth-ready');
