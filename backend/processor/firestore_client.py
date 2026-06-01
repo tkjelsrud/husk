@@ -162,3 +162,54 @@ def update_entry_error(db, doc_id: str, error_message: str):
         'lastError': error_message,
         'lastTriedAt': datetime.now(timezone.utc),
     })
+
+
+# ── Documents collection ──────────────────────────────────────────────────
+
+def fetch_documents(db, limit: int = 50):
+    query = db.collection('documents').order_by('updatedAt', direction=firestore.Query.DESCENDING).limit(limit)
+    return [{'id': d.id, **(d.to_dict() or {})} for d in query.stream()]
+
+
+def get_document(db, doc_id: str):
+    snapshot = db.collection('documents').document(doc_id).get()
+    if not snapshot.exists:
+        return None
+    return {'id': snapshot.id, **(snapshot.to_dict() or {})}
+
+
+def create_document(db, title: str, content: str, *, added_by_email: str = 'mcp@local', added_by_uid: str = 'mcp-local'):
+    payload = {
+        'title': title,
+        'content': content,
+        'addedByEmail': added_by_email,
+        'addedByUid': added_by_uid,
+        'createdAt': firestore.SERVER_TIMESTAMP,
+        'updatedAt': firestore.SERVER_TIMESTAMP,
+    }
+    ref = db.collection('documents').document()
+    ref.set(payload)
+    return ref
+
+
+def update_document(db, doc_id: str, payload: dict):
+    ref = db.collection('documents').document(doc_id)
+    snapshot = ref.get()
+    if not snapshot.exists:
+        return None
+    updates = {'updatedAt': firestore.SERVER_TIMESTAMP}
+    if 'title' in payload:
+        updates['title'] = str(payload['title'])
+    if 'content' in payload:
+        updates['content'] = str(payload['content'])
+    ref.update(updates)
+    updated = ref.get()
+    return {'id': updated.id, **(updated.to_dict() or {})}
+
+
+def delete_document(db, doc_id: str):
+    ref = db.collection('documents').document(doc_id)
+    if not ref.get().exists:
+        return False
+    ref.delete()
+    return True

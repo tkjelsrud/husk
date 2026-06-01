@@ -5,7 +5,19 @@ import os
 import sys
 
 from .processor.config import load_settings
-from .processor.firestore_client import create_client, create_entry, delete_entry, fetch_entries, get_entry, update_entry
+from .processor.firestore_client import (
+    create_client,
+    create_document,
+    create_entry,
+    delete_document,
+    delete_entry,
+    fetch_documents,
+    fetch_entries,
+    get_document,
+    get_entry,
+    update_document,
+    update_entry,
+)
 from .processor.schemas import ENTRY_CATEGORIES, ENTRY_PRIORITIES
 
 
@@ -180,6 +192,63 @@ def handle_tools_list(request_id):
                     'required': ['id'],
                 },
             },
+            {
+                'name': 'list_documents',
+                'description': 'List markdown documents from Husk /write. Returns id, title, and updatedAt for each.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'limit': {'type': 'integer', 'minimum': 1, 'maximum': 100, 'default': 50},
+                    },
+                },
+            },
+            {
+                'name': 'get_document',
+                'description': 'Get the full content of a Husk /write document by id.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                },
+            },
+            {
+                'name': 'add_document',
+                'description': 'Create a new markdown document in Husk /write.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'title': {'type': 'string'},
+                        'content': {'type': 'string'},
+                    },
+                    'required': ['title'],
+                },
+            },
+            {
+                'name': 'update_document',
+                'description': 'Update the title and/or content of an existing Husk /write document.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                        'title': {'type': 'string'},
+                        'content': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                },
+            },
+            {
+                'name': 'delete_document',
+                'description': 'Delete a Husk /write document by id.',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                    },
+                    'required': ['id'],
+                },
+            },
         ]
     })
 
@@ -322,6 +391,90 @@ def handle_tools_call(request_id, params):
                     'text': json.dumps({'item': serialize_entry(entry)}, ensure_ascii=True),
                 }
             ]
+        })
+
+    if tool_name == 'list_documents':
+        limit = max(1, min(int(arguments.get('limit', 50)), 100))
+        docs = fetch_documents(db, limit=limit)
+        serialized = [
+            {
+                'id': d.get('id'),
+                'title': d.get('title', ''),
+                'updatedAt': d['updatedAt'].isoformat() if getattr(d.get('updatedAt'), 'isoformat', None) else str(d.get('updatedAt', '')),
+            }
+            for d in docs
+        ]
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({'documents': serialized}, ensure_ascii=True)}]
+        })
+
+    if tool_name == 'get_document':
+        doc_id = str(arguments.get('id', '')).strip()
+        if not doc_id:
+            return error_response(request_id, -32602, 'id is required')
+        doc = get_document(db, doc_id)
+        if not doc:
+            return error_response(request_id, -32004, 'document not found')
+        def maybe_iso(v):
+            return v.isoformat() if getattr(v, 'isoformat', None) else str(v or '')
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({
+                'id': doc.get('id'),
+                'title': doc.get('title', ''),
+                'content': doc.get('content', ''),
+                'updatedAt': maybe_iso(doc.get('updatedAt')),
+                'createdAt': maybe_iso(doc.get('createdAt')),
+            }, ensure_ascii=True)}]
+        })
+
+    if tool_name == 'add_document':
+        title = str(arguments.get('title', '')).strip()
+        if not title:
+            return error_response(request_id, -32602, 'title is required')
+        if len(title) > 200:
+            return error_response(request_id, -32602, 'title must be 200 characters or less')
+        content = str(arguments.get('content', ''))
+        if len(content) > 100000:
+            return error_response(request_id, -32602, 'content must be 100000 characters or less')
+        ref = create_document(db, title, content)
+        doc = get_document(db, ref.id)
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({'id': ref.id, 'title': title}, ensure_ascii=True)}]
+        })
+
+    if tool_name == 'update_document':
+        doc_id = str(arguments.get('id', '')).strip()
+        if not doc_id:
+            return error_response(request_id, -32602, 'id is required')
+        updates = {}
+        if 'title' in arguments:
+            title = str(arguments['title']).strip()
+            if not title or len(title) > 200:
+                return error_response(request_id, -32602, 'title must be 1–200 characters')
+            updates['title'] = title
+        if 'content' in arguments:
+            content = str(arguments['content'])
+            if len(content) > 100000:
+                return error_response(request_id, -32602, 'content must be 100000 characters or less')
+            updates['content'] = content
+        if not updates:
+            return error_response(request_id, -32602, 'at least one of title or content is required')
+        doc = update_document(db, doc_id, updates)
+        if not doc:
+            return error_response(request_id, -32004, 'document not found')
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({'id': doc_id, 'updated': True}, ensure_ascii=True)}]
+        })
+
+    if tool_name == 'delete_document':
+        doc_id = str(arguments.get('id', '')).strip()
+        if not doc_id:
+            return error_response(request_id, -32602, 'id is required')
+        deleted = delete_document(db, doc_id)
+        if not deleted:
+            return error_response(request_id, -32004, 'document not found')
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({'deleted': True, 'id': doc_id}, ensure_ascii=True)}]
         })
 
     return error_response(request_id, -32601, f'Unknown tool: {tool_name}')

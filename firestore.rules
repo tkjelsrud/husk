@@ -44,6 +44,25 @@ service cloud.firestore {
       allow delete: if isAllowedUser();
       
     }
+    match /documents/{docId} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 100000
+        && request.resource.data.addedByUid == request.auth.uid
+        && request.resource.data.addedByEmail == request.auth.token.email
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isAllowedUser()
+        && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['title', 'content', 'updatedAt'])
+        && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200))
+        && (!('content' in request.resource.data) || (request.resource.data.content is string && request.resource.data.content.size() <= 100000));
+      allow delete: if isAllowedUser();
+    }
     match /{document=**} {
       allow read, write: if false;
     }

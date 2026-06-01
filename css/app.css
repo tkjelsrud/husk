@@ -817,6 +817,217 @@ body.app-auth-ready nav {
   pointer-events: none;
 }
 
+/* ── Write page ─────────────────────────────────────────────────────────── */
+
+.write-page {
+  overflow: hidden;
+}
+
+.write-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: calc(100vh - 3.75rem);
+  height: calc(100dvh - 3.75rem);
+}
+
+.write-sidebar {
+  border-right: 1px solid rgba(29, 29, 27, 0.12);
+  background: #f7f4ee;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.write-sidebar-header {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(29, 29, 27, 0.08);
+  flex-shrink: 0;
+}
+
+.write-doc-list {
+  list-style: none;
+  padding: 0.35rem 0;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.write-doc-empty {
+  padding: 0.75rem 1rem;
+  color: #9a8c7a;
+  font-size: 0.85rem;
+}
+
+.write-doc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0.55rem 1rem;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 120ms;
+}
+
+.write-doc-item:hover {
+  background: #ece6da;
+}
+
+.write-doc-item.active {
+  background: #e4ddd0;
+  box-shadow: inset 3px 0 0 #6a5233;
+}
+
+.write-doc-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1d1d1b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.write-doc-date {
+  font-size: 0.74rem;
+  color: #9a8c7a;
+}
+
+.write-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+.write-back-btn {
+  align-self: flex-start;
+  color: #6a5233;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.write-back-btn:hover {
+  color: #3f2a14;
+}
+
+.write-empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.write-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0.75rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(29, 29, 27, 0.08);
+}
+
+.write-view-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  min-width: 0;
+}
+
+.write-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.write-delete-btn {
+  color: #a6402f;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.4rem;
+  text-decoration: none;
+}
+
+.write-delete-btn:hover {
+  color: #7c2315;
+  text-decoration: underline;
+}
+
+.write-view-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.95rem;
+}
+
+.write-edit-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 1rem 1.25rem;
+  gap: 0.75rem;
+}
+
+.write-title-input {
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.write-content-input {
+  flex: 1;
+  resize: none;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  border-radius: 10px;
+  min-height: 0;
+}
+
+.write-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Mobile: hide panel until a doc is selected */
+@media (max-width: 700px) {
+  .write-shell {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .write-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+  }
+
+  .write-panel.write-panel-active {
+    transform: translateX(0);
+  }
+
+  .write-view-body {
+    padding: 1rem;
+  }
+
+  .write-edit-form {
+    padding: 0.75rem;
+  }
+}
+
+/* ── End Write page ──────────────────────────────────────────────────────── */
+
 @media (max-width: 576px) {
   .water-button-grid,
   .water-button-grid-bottles {
