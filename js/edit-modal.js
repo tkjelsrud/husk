@@ -169,7 +169,7 @@ export function openEditModal(entry, onSave) {
     doneButton.className = 'btn btn-outline-warning';
   } else {
     doneButton.textContent = 'Ferdig';
-    doneButton.className = 'btn btn-outline-secondary';
+    doneButton.className = 'btn btn-done-action';
   }
 
   if (currentEntryLater) {
