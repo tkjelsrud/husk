@@ -39,11 +39,10 @@ function buildDialog() {
         </select>
       </div>
       <div class="edit-dialog-footer mt-4">
-        <button type="button" id="edit-cancel" class="btn btn-link text-muted">Avbryt</button>
         <button type="button" id="edit-details" class="btn btn-link">Detaljer</button>
         <button type="button" id="edit-later" class="btn btn-outline-secondary">Utsett</button>
         <button type="button" id="edit-done" class="btn btn-outline-secondary">Ferdig</button>
-        <button type="button" id="edit-save" class="btn btn-dark">Lagre</button>
+        <button type="button" id="edit-save" class="btn btn-dark">Lukk</button>
       </div>
     </div>
   `;
@@ -57,7 +56,6 @@ function buildDialog() {
   laterButton = dialog.querySelector('#edit-later');
   detailsButton = dialog.querySelector('#edit-details');
 
-  dialog.querySelector('#edit-cancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
   saveButton.addEventListener('click', handleSave);
   doneButton.addEventListener('click', handleMarkDone);
