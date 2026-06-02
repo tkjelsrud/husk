@@ -21,9 +21,10 @@ function buildDialog() {
   dialog.className = 'edit-dialog';
   dialog.innerHTML = `
     <div class="edit-dialog-inner">
-      <h2 class="h5 mb-3">Rediger</h2>
+      <div class="edit-dialog-topbar">
+        <button type="button" id="edit-details" class="btn btn-link edit-details-link">Detaljer</button>
+      </div>
       <div id="edit-status" class="alert d-none" role="alert"></div>
-      <label class="form-label" for="edit-text">Tekst</label>
       <textarea id="edit-text" class="form-control" rows="5" maxlength="1500"></textarea>
       <div class="mt-3">
         <label class="form-label" for="edit-category">Kategori</label>
@@ -39,10 +40,11 @@ function buildDialog() {
         </select>
       </div>
       <div class="edit-dialog-footer mt-4">
-        <button type="button" id="edit-details" class="btn btn-link">Detaljer</button>
         <button type="button" id="edit-later" class="btn btn-outline-secondary">Utsett</button>
-        <button type="button" id="edit-done" class="btn btn-outline-secondary">Ferdig</button>
-        <button type="button" id="edit-save" class="btn btn-dark">Lukk</button>
+        <div class="d-flex gap-2">
+          <button type="button" id="edit-done" class="btn btn-outline-secondary">Ferdig</button>
+          <button type="button" id="edit-save" class="btn btn-dark">Lukk</button>
+        </div>
       </div>
     </div>
   `;

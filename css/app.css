@@ -609,11 +609,29 @@ body.app-auth-ready nav {
   padding: 1.5rem;
 }
 
-.edit-dialog-footer {
+.edit-dialog-topbar {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.edit-details-link {
+  color: #9a8c7a;
+  font-size: 0.82rem;
+  padding: 0 0.1rem;
+  text-decoration: none;
+}
+
+.edit-details-link:hover,
+.edit-details-link:focus {
+  color: #6a5233;
+  text-decoration: underline;
+}
+
+.edit-dialog-footer {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .entry-details-meta {
