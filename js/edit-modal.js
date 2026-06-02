@@ -1,4 +1,4 @@
-import { updateEntry, markEntryDone, markEntryNotDone, ENTRY_CATEGORIES } from './db.js';
+import { updateEntry, markEntryDone, markEntryNotDone, markEntryLater, markEntryNotLater, ENTRY_CATEGORIES } from './db.js';
 import { openEntryDetailsModal } from './entry-details-modal.js';
 import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 
@@ -8,9 +8,11 @@ let categoryField = null;
 let statusEl = null;
 let saveButton = null;
 let doneButton = null;
+let laterButton = null;
 let detailsButton = null;
 let currentEntryId = null;
 let currentEntryDone = false;
+let currentEntryLater = false;
 let currentEntry = null;
 let pendingOnSave = null;
 
@@ -39,6 +41,7 @@ function buildDialog() {
       <div class="edit-dialog-footer mt-4">
         <button type="button" id="edit-cancel" class="btn btn-link text-muted">Avbryt</button>
         <button type="button" id="edit-details" class="btn btn-link">Detaljer</button>
+        <button type="button" id="edit-later" class="btn btn-outline-secondary">Utsett</button>
         <button type="button" id="edit-done" class="btn btn-outline-secondary">Ferdig</button>
         <button type="button" id="edit-save" class="btn btn-dark">Lagre</button>
       </div>
@@ -51,12 +54,14 @@ function buildDialog() {
   statusEl = dialog.querySelector('#edit-status');
   saveButton = dialog.querySelector('#edit-save');
   doneButton = dialog.querySelector('#edit-done');
+  laterButton = dialog.querySelector('#edit-later');
   detailsButton = dialog.querySelector('#edit-details');
 
   dialog.querySelector('#edit-cancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
   saveButton.addEventListener('click', handleSave);
   doneButton.addEventListener('click', handleMarkDone);
+  laterButton.addEventListener('click', handleMarkLater);
   detailsButton.addEventListener('click', handleDetails);
 }
 
@@ -64,6 +69,25 @@ function showStatus(kind, message) {
   statusEl.textContent = message;
   statusEl.className = `alert alert-${kind}`;
   statusEl.classList.remove('d-none');
+}
+
+async function handleMarkLater() {
+  laterButton.disabled = true;
+  saveButton.disabled = true;
+  try {
+    if (currentEntryLater) {
+      await markEntryNotLater(currentEntryId);
+    } else {
+      await markEntryLater(currentEntryId);
+    }
+    dialog.close();
+    if (pendingOnSave) pendingOnSave();
+  } catch (err) {
+    console.error(err);
+    showStatus('danger', 'Kunne ikke oppdatere.');
+    laterButton.disabled = false;
+    saveButton.disabled = false;
+  }
 }
 
 async function handleMarkDone() {
@@ -130,21 +154,30 @@ export function openEditModal(entry, onSave) {
   currentEntry = entry;
   currentEntryId = entry.id;
   currentEntryDone = entry.done === true;
+  currentEntryLater = entry.later === true;
   pendingOnSave = onSave;
   textField.value = entry.textInput || '';
   categoryField.value = entry.category || 'unknown';
   statusEl.classList.add('d-none');
   saveButton.disabled = false;
   doneButton.disabled = false;
+  laterButton.disabled = false;
   detailsButton.disabled = false;
-  
-  // Update button text based on done status
+
   if (currentEntryDone) {
     doneButton.textContent = 'Marker som uferdig';
     doneButton.className = 'btn btn-outline-warning';
   } else {
     doneButton.textContent = 'Ferdig';
     doneButton.className = 'btn btn-outline-secondary';
+  }
+
+  if (currentEntryLater) {
+    laterButton.textContent = 'Fjern utsettelse';
+    laterButton.className = 'btn btn-outline-warning';
+  } else {
+    laterButton.textContent = 'Utsett';
+    laterButton.className = 'btn btn-outline-secondary';
   }
   
   dialog.showModal();

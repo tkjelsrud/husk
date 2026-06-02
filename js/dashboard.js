@@ -398,7 +398,7 @@ async function loadRecent() {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
       const statusClass = e.processed ? 'done' : 'pending';
-      const doneClass = e.done === true ? 'entry-done' : '';
+      const doneClass = e.done === true ? 'entry-done' : (e.later === true ? 'entry-later' : '');
       const dragHandle = e.done === true
         ? ''
         : `<button class="recent-entry-handle" type="button" aria-label="Flytt notat" data-drag-handle="true">⋮⋮</button>`;

@@ -336,6 +336,19 @@ body.app-auth-ready nav {
   opacity: 0.45;
 }
 
+.entry-later .recent-entry-text,
+.entry-later .recent-entry-date {
+  color: #9a8c7a;
+}
+
+.folder-tab-later {
+  color: #9a8c7a;
+}
+
+.folder-tab-later.active {
+  color: #6a5233;
+}
+
 .entry-done .entry-text,
 .entry-done .recent-entry-text {
   text-decoration: line-through;

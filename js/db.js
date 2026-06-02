@@ -166,6 +166,18 @@ export async function markEntryNotDone(entryId) {
   });
 }
 
+export async function markEntryLater(entryId) {
+  return withFirestoreAuthRetry(() =>
+    updateDoc(doc(db, 'entries', entryId), { later: true })
+  );
+}
+
+export async function markEntryNotLater(entryId) {
+  return withFirestoreAuthRetry(() =>
+    updateDoc(doc(db, 'entries', entryId), { later: false })
+  );
+}
+
 export async function saveRegularEntriesOrder(orderedEntryIds) {
   return withFirestoreAuthRetry(async () => {
     const entries = await getRegularEntriesForOrdering();

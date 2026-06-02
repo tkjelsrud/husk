@@ -72,3 +72,30 @@ test('matchesRecentFilter calendar tab excludes entries without dueDate', () => 
   assert.equal(matchesRecentFilter({ category: 'work' }, 'calendar'), false);
   assert.equal(matchesRecentFilter({ category: 'family', dueDate: null }, 'calendar'), false);
 });
+
+// ── Later tab ─────────────────────────────────────────────
+
+test('matchesRecentFilter later tab shows entries with later:true', () => {
+  assert.equal(matchesRecentFilter({ category: 'work', later: true }, 'later'), true);
+  assert.equal(matchesRecentFilter({ category: 'family', later: true }, 'later'), true);
+});
+
+test('matchesRecentFilter later tab excludes entries without later:true', () => {
+  assert.equal(matchesRecentFilter({ category: 'work' }, 'later'), false);
+  assert.equal(matchesRecentFilter({ category: 'work', later: false }, 'later'), false);
+});
+
+// ── Later entries excluded from other tabs ────────────────
+
+test('matchesRecentFilter general tab excludes later entries', () => {
+  assert.equal(matchesRecentFilter({ category: 'family', later: true }, 'general'), false);
+  assert.equal(matchesRecentFilter({ category: 'general', later: true }, 'general'), false);
+});
+
+test('matchesRecentFilter work tab excludes later entries', () => {
+  assert.equal(matchesRecentFilter({ category: 'work', later: true }, 'work'), false);
+});
+
+test('matchesRecentFilter calendar tab excludes later entries', () => {
+  assert.equal(matchesRecentFilter({ category: 'work', dueDate: '2026-06-01', later: true }, 'calendar'), false);
+});

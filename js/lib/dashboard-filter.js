@@ -5,6 +5,12 @@ export function hasFixedCalendarDate(entry) {
 export function matchesRecentFilter(entry, activeFilter) {
   if (entry?.category === 'axiom') return false;
 
+  if (activeFilter === 'later') {
+    return entry?.later === true;
+  }
+
+  if (entry?.later === true) return false;
+
   if (activeFilter === 'calendar') {
     return hasFixedCalendarDate(entry);
   }
