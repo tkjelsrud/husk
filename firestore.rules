@@ -36,7 +36,7 @@ service cloud.firestore {
         && (!('entryType' in request.resource.data) || request.resource.data.entryType in ['regular', 'fixed'])
         && (!('recurrence' in request.resource.data) || request.resource.data.recurrence is map);
       allow update: if isAllowedUser()
-			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt', 'sortOrder', 'entryType', 'recurrence', 'later'])
+			&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(['textInput', 'category', 'done', 'createdAt', 'sortOrder', 'entryType', 'recurrence', 'later', 'meta'])
 			&& (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp)
 			&& (!('sortOrder' in request.resource.data) || request.resource.data.sortOrder is int)
         && (!('entryType' in request.resource.data) || request.resource.data.entryType in ['regular', 'fixed'])
