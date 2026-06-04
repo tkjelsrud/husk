@@ -63,6 +63,18 @@ function renderEntries(entries) {
   entriesList.innerHTML = visibleEntries.map(renderMobileEntry).join('');
 }
 
+const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
+
+function renderTouchDots(meta) {
+  const n = Number(meta?.touches) || 0;
+  if (n <= 0) return '';
+  const color = TOUCH_COLORS[Math.min(n, 5)];
+  const pips = Array.from({ length: n }, () =>
+    `<span class="touch-dot-pip" style="background:${color}"></span>`
+  ).join('');
+  return `<span class="touch-dots" aria-label="${n} av 5">${pips}</span>`;
+}
+
 function renderDesktopEntry(entry) {
   const processedLabel = entry.processed ? 'Prosessert' : 'Ikke prosessert';
   const processedClass = entry.processed ? 'done' : 'pending';
@@ -108,6 +120,7 @@ function renderDesktopEntry(entry) {
             </div>
           </div>
           <pre class="entry-text">${text}</pre>
+          ${renderTouchDots(entry.meta)}
           <details class="entry-extra entry-extra-desktop">
             <summary>Mer</summary>
             <div class="entry-chip-row">
@@ -162,6 +175,7 @@ function renderMobileEntry(entry) {
         <span class="status-dot ${processedClass}" aria-hidden="true"></span>
         <div class="entry-card-content">
           <pre class="entry-text entry-text-mobile">${text}</pre>
+          ${renderTouchDots(entry.meta)}
           <div class="entry-card-subline">
             <span>${createdAt}</span>
             <span>${dueDate === '-' ? 'Ingen frist' : `Frist ${dueDate}`}</span>

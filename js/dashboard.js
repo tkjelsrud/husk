@@ -5,6 +5,16 @@ import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
 
+const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
+function renderTouchDots(meta) {
+  const n = Number(meta?.touches) || 0;
+  if (n <= 0) return '';
+  const color = TOUCH_COLORS[Math.min(n, 5)];
+  return Array.from({ length: n }, () =>
+    `<span class="touch-dot-pip" style="background:${color}"></span>`
+  ).join('');
+}
+
 const recentSection = document.getElementById('recent-section');
 const recentList = document.getElementById('recent-list');
 const recentFilterTabs = document.getElementById('recent-filter-tabs');
@@ -409,6 +419,7 @@ async function loadRecent() {
         ${dragHandle}
         <span class="status-dot ${statusClass}" aria-hidden="true"></span>
         <span class="recent-entry-text">${text}</span>
+        <span class="touch-dots recent-entry-touch-dots">${renderTouchDots(e.meta)}</span>
         <span class="recent-entry-date">${date}</span>
       </div>`;
     }).join('');

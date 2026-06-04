@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from backend.processor.entry_processor import process_entry
+from backend.processor.entry_processor import process_entry, _extract_time_range
 from backend.processor.calendar_client import _should_sync
 
 
@@ -99,3 +99,40 @@ def test_process_entry_calendar_eligible_for_family_with_date(mock_sync):
     entry = {'textInput': 'Barnebursdag 2026-06-20', 'category': 'family'}
     result = process_entry(_make_settings(), entry, entry_id='abc')
     assert result['processingDetails']['calendar']['eligible'] is True
+
+
+# --- _extract_time_range ---
+
+def test_extract_time_range_dash_with_end_minutes():
+    start, end = _extract_time_range('9.6 17-19:00 Thomas øving')
+    assert start.hour == 17 and start.minute == 0
+    assert end.hour == 19 and end.minute == 0
+
+
+def test_extract_time_range_both_with_minutes():
+    start, end = _extract_time_range('Møte 15.06.2026 09:00-10:30')
+    assert start.hour == 9 and start.minute == 0
+    assert end.hour == 10 and end.minute == 30
+
+
+def test_extract_time_range_none_when_absent():
+    assert _extract_time_range('Tannlege 15.06.2026') is None
+
+
+def test_extract_time_range_does_not_match_date():
+    # "9.6" is a date, not a time range
+    assert _extract_time_range('Noe den 9.6') is None
+
+
+# --- process_entry: time range applied to dueDate ---
+
+@patch('backend.processor.entry_processor.sync_calendar_event')
+def test_process_entry_time_range_sets_start_time(mock_sync):
+    mock_sync.return_value = {'calendarEventCreated': False, 'calendarSyncStatus': 'skipped', 'calendarSyncTime': None}
+    entry = {'textInput': '9.6 17-19:00 Thomas øving', 'category': 'family'}
+    result = process_entry(_make_settings(), entry, entry_id='abc')
+    assert result['dueDate'].hour == 17
+    assert result['dueDate'].minute == 0
+    assert result['dueEnd'] is not None
+    assert result['dueEnd'].hour == 19
+    assert result['dueEnd'].minute == 0

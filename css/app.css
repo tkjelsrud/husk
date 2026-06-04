@@ -634,6 +634,56 @@ body.app-auth-ready nav {
   align-items: center;
 }
 
+.touch-dot-row {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.touch-dot-btn {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  border: 1.5px solid #c0b8ae;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.touch-dot-btn.filled {
+  border-color: transparent;
+}
+
+.touch-dot-btn:hover {
+  border-color: #8a7a68;
+}
+
+.touch-dots {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  margin-top: 0.3rem;
+}
+
+.touch-dot-pip {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.recent-entry-touch-dots {
+  margin-top: 0;
+  margin-left: 0.3rem;
+  gap: 0.2rem;
+}
+
+.recent-entry-touch-dots:empty {
+  display: none;
+}
+
 .entry-details-meta {
   display: grid;
   grid-template-columns: minmax(120px, 160px) 1fr;

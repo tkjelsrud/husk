@@ -34,12 +34,14 @@ def sync_calendar_event(settings, entry_id: str, entry: dict, payload: dict):
 
     service = _build_service(settings, token_path)
     due_date = payload['dueDate'].astimezone(CALENDAR_ZONEINFO)
+    due_end_raw = payload.get('dueEnd')
+    due_end = due_end_raw.astimezone(CALENDAR_ZONEINFO) if due_end_raw else due_date + timedelta(hours=1)
     summary = payload.get('processingSummary') or str(entry.get('textInput', '')).strip()[:80]
     event_body = {
         'summary': summary or 'Husk',
         'description': _build_description(entry_id, entry),
         'start': {'dateTime': due_date.isoformat(), 'timeZone': CALENDAR_TIMEZONE},
-        'end': {'dateTime': (due_date + timedelta(hours=1)).isoformat(), 'timeZone': CALENDAR_TIMEZONE},
+        'end': {'dateTime': due_end.isoformat(), 'timeZone': CALENDAR_TIMEZONE},
     }
 
     existing_event_id = str(entry.get('calendarEventId', '')).strip()

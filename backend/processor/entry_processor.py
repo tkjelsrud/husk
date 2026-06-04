@@ -23,6 +23,14 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
     now = datetime.now(DEFAULT_TIMEZONE)
 
     due_date = _extract_due_date(text_input, now)
+    due_end = None
+    if due_date is not None:
+        time_range = _extract_time_range(text_input)
+        if time_range is not None:
+            start_t, end_t = time_range
+            due_date = datetime.combine(due_date.date(), start_t, tzinfo=DEFAULT_TIMEZONE)
+            due_end = datetime.combine(due_date.date(), end_t, tzinfo=DEFAULT_TIMEZONE)
+
     priority = _normalize_priority(_extract_priority(text_input))
     category = _normalize_category(entry.get('category'))
 
@@ -30,6 +38,7 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
         'category': category,
         'priority': priority,
         'dueDate': due_date,
+        'dueEnd': due_end,
         'processingSummary': '',
         'processorVersion': PROCESSOR_VERSION,
         'lastError': firestore_delete(),
@@ -114,6 +123,11 @@ def _extract_priority(text_input: str):
     return 'normal'
 
 
+TIME_RANGE_RE = re.compile(
+    r'(?<!\d)(\d{1,2})(?:[.:](\d{2}))?\s*[-–]\s*(\d{1,2})(?:[.:](\d{2}))?(?!\d)'
+)
+
+
 def _extract_due_date(text_input: str, now: datetime):
     lowered = text_input.lower()
 
@@ -145,6 +159,20 @@ def _extract_due_date(text_input: str, now: datetime):
         return _at_default_time(datetime(year_value, month, day, tzinfo=timezone.utc).date())
 
     return None
+
+
+def _extract_time_range(text_input: str):
+    """Return (start_time, end_time) if a time range like '17-19:00' is found, else None."""
+    match = TIME_RANGE_RE.search(text_input)
+    if not match:
+        return None
+    sh = int(match.group(1))
+    sm = int(match.group(2) or 0)
+    eh = int(match.group(3))
+    em = int(match.group(4) or 0)
+    if not (0 <= sh <= 23 and 0 <= sm <= 59 and 0 <= eh <= 23 and 0 <= em <= 59):
+        return None
+    return time(sh, sm), time(eh, em)
 
 
 def _at_default_time(target_date):

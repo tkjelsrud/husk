@@ -128,10 +128,11 @@ export async function deleteEntry(entryId) {
   return withFirestoreAuthRetry(() => deleteDoc(doc(db, 'entries', entryId)));
 }
 
-export async function updateEntry(entryId, { textInput, category }) {
+export async function updateEntry(entryId, { textInput, category, touches }) {
   return withFirestoreAuthRetry(() => updateDoc(doc(db, 'entries', entryId), {
     textInput,
-    category
+    category,
+    'meta.touches': typeof touches === 'number' ? touches : 0,
   }));
 }
 
