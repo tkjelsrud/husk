@@ -107,9 +107,23 @@ function showStatus(kind, message) {
 }
 
 async function handleMarkLater() {
+  const rawText = textField.value;
+  const category = categoryField.value;
+
+  const textValidation = validateEntryText(rawText);
+  if (!textValidation.ok) {
+    showStatus('danger', textValidation.message);
+    return;
+  }
+
   laterButton.disabled = true;
   saveButton.disabled = true;
   try {
+    await updateEntry(currentEntryId, {
+      textInput: normalizeEntryText(rawText),
+      category,
+      touches: currentTouches,
+    });
     if (currentEntryLater) {
       await markEntryNotLater(currentEntryId);
     } else {
@@ -126,14 +140,26 @@ async function handleMarkLater() {
 }
 
 async function handleMarkDone() {
+  const rawText = textField.value;
+  const category = categoryField.value;
+
+  const textValidation = validateEntryText(rawText);
+  if (!textValidation.ok) {
+    showStatus('danger', textValidation.message);
+    return;
+  }
+
   doneButton.disabled = true;
   saveButton.disabled = true;
   try {
+    await updateEntry(currentEntryId, {
+      textInput: normalizeEntryText(rawText),
+      category,
+      touches: currentTouches,
+    });
     if (currentEntryDone) {
-      // Mark as not done (back to pending)
       await markEntryNotDone(currentEntryId);
     } else {
-      // Mark as done
       await markEntryDone(currentEntryId);
     }
     dialog.close();
