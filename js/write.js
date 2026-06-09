@@ -36,6 +36,17 @@ let isNewDoc = false;
 
 logoutButton.addEventListener('click', () => logout());
 
+function getDocIdFromHash() {
+  return decodeURIComponent(window.location.hash.replace(/^#/, '')) || null;
+}
+
+function setDocIdInHash(id) {
+  const next = id ? `#${encodeURIComponent(id)}` : '';
+  if (next !== window.location.hash) {
+    history.replaceState(null, '', next || window.location.pathname + window.location.search);
+  }
+}
+
 function escapeHtml(str) {
   return String(str)
     .replaceAll('&', '&amp;')
@@ -117,11 +128,16 @@ async function loadDocs() {
   try {
     currentDocs = await getDocuments();
     renderDocList(currentDocs);
+    if (!currentDocId) {
+      currentDocId = getDocIdFromHash();
+      renderDocList(currentDocs);
+    }
     if (currentDocId) {
       const still = currentDocs.find((d) => d.id === currentDocId);
       if (still) showViewMode(still);
       else {
         currentDocId = null;
+        setDocIdInHash(null);
         showEmptyState();
       }
     }
@@ -132,6 +148,7 @@ async function loadDocs() {
 
 function selectDoc(id) {
   currentDocId = id;
+  setDocIdInHash(id);
   isNewDoc = false;
   const doc = currentDocs.find((d) => d.id === id);
   if (!doc) return;
@@ -186,6 +203,7 @@ saveBtn.addEventListener('click', async () => {
     if (isNewDoc) {
       const ref = await addDocument({ title, content }, currentUser);
       currentDocId = ref.id;
+      setDocIdInHash(ref.id);
       isNewDoc = false;
     } else {
       await updateDocument(currentDocId, { title, content });
@@ -210,6 +228,7 @@ deleteBtn.addEventListener('click', async () => {
   try {
     await deleteDocument(currentDocId);
     currentDocId = null;
+    setDocIdInHash(null);
     showEmptyState();
     viewPanel.classList.remove('write-panel-active');
     backBtn.classList.add('d-none');
@@ -223,6 +242,7 @@ backBtn.addEventListener('click', () => {
   viewPanel.classList.remove('write-panel-active');
   backBtn.classList.add('d-none');
   currentDocId = null;
+  setDocIdInHash(null);
   isNewDoc = false;
   saveBtn.textContent = 'Lagre';
   showEmptyState();
