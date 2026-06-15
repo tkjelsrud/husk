@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Husk">
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#70cb86"/>
+      <stop offset="1" stop-color="#2b8c45"/>
+    </linearGradient>
+  </defs>
+  <!-- tile -->
+  <rect x="0" y="0" width="32" height="32" rx="7" fill="#1d1d1b"/>
+  <!-- H mark (drawn as rects for crisp small-size rendering) -->
+  <g fill="#f3f1ec">
+    <rect x="8" y="8" width="4" height="16" rx="1"/>
+    <rect x="20" y="8" width="4" height="16" rx="1"/>
+    <rect x="8" y="14" width="16" height="4" rx="1"/>
+  </g>
+  <!-- reminder badge -->
+  <circle cx="25" cy="7" r="5" fill="url(#badge)" stroke="#1d1d1b" stroke-width="2"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="180" height="180" role="img" aria-label="Husk">
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#70cb86"/>
+      <stop offset="1" stop-color="#2b8c45"/>
+    </linearGradient>
+  </defs>
+  <!-- full-bleed tile; iOS applies its own rounded mask -->
+  <rect x="0" y="0" width="32" height="32" fill="#1d1d1b"/>
+  <!-- H mark -->
+  <g fill="#f3f1ec">
+    <rect x="9" y="9" width="4" height="14" rx="1"/>
+    <rect x="19" y="9" width="4" height="14" rx="1"/>
+    <rect x="9" y="14" width="14" height="4" rx="1"/>
+  </g>
+  <!-- reminder badge, pulled inward so iOS corner rounding doesn't clip it -->
+  <circle cx="23" cy="9" r="4.5" fill="url(#badge)" stroke="#1d1d1b" stroke-width="1.5"/>
+</svg>
