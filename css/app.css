@@ -30,6 +30,19 @@ body.app-auth-ready nav {
   text-transform: uppercase;
 }
 
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The mark's "H" stands in for the H in HUSK; size it so the H matches the
+   cap height of the adjacent letters, letting the badge overflow above. */
+.brand-lockup .brand-h {
+  height: 1.15em;
+  width: auto;
+  margin-right: 0.05em;
+}
+
 .navbar .nav-link {
   color: rgba(255, 255, 255, 0.7) !important;
 }

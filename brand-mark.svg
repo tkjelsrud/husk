@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="H">
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#70cb86"/>
+      <stop offset="1" stop-color="#2b8c45"/>
+    </linearGradient>
+  </defs>
+  <!-- H mark (transparent background; sits directly on the dark navbar) -->
+  <g fill="#f3f1ec">
+    <rect x="3" y="4" width="3.5" height="16" rx="1"/>
+    <rect x="13.5" y="4" width="3.5" height="16" rx="1"/>
+    <rect x="3" y="10.25" width="14" height="3.5" rx="1"/>
+  </g>
+  <!-- reminder badge; dark stroke matches the navbar to cut a clean gap from the H -->
+  <circle cx="18.5" cy="5" r="4" fill="url(#badge)" stroke="#1d1d1b" stroke-width="1.5"/>
+</svg>
