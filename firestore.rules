@@ -83,9 +83,11 @@ service cloud.firestore {
         && request.resource.data.updatedAt is timestamp;
       allow update: if isAllowedUser()
         && request.resource.data.diff(resource.data)
-            .affectedKeys().hasOnly(['title', 'text', 'updatedAt'])
+            .affectedKeys().hasOnly(['title', 'text', 'updatedAt', 'meta', 'archived'])
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200))
-        && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 100000));
+        && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 100000))
+        && (!('meta' in request.resource.data) || request.resource.data.meta is map)
+        && (!('archived' in request.resource.data) || request.resource.data.archived is bool);
       allow delete: if isAllowedUser();
     }
     match /{document=**} {
