@@ -20,7 +20,7 @@ body.app-auth-ready nav {
 
 .app-nav .container,
 .app-nav .container-fluid {
-  min-height: 3.375rem;
+  min-height: 2.875rem;
 }
 
 .navbar-brand {
@@ -41,6 +41,11 @@ body.app-auth-ready nav {
   height: 1.15em;
   width: auto;
   margin-right: 0.05em;
+}
+
+.brand-lockup .brand-usk {
+  position: relative;
+  top: 2px;
 }
 
 .navbar .nav-link {

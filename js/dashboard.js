@@ -421,9 +421,10 @@ function toggleAudioPlay(btn) {
   });
 }
 
-async function loadAudioFolder() {
+async function loadAudioFolder(filter) {
   try {
     const notes = await getAudioNotes();
+    if (activeRecentFilter !== filter) return;
     recentSection.classList.remove('d-none');
     if (notes.length === 0) {
       recentList.innerHTML = '<div class="text-muted py-2">Ingen lydnotater ennå.</div>';
@@ -451,9 +452,10 @@ function makeExtract(content) {
   return flat.length > 100 ? `${flat.slice(0, 100)}…` : flat;
 }
 
-async function loadWriteFolder() {
+async function loadWriteFolder(filter) {
   try {
     const docs = (await getDocuments()).filter((d) => !d.archived);
+    if (activeRecentFilter !== filter) return;
     recentSection.classList.remove('d-none');
     if (docs.length === 0) {
       recentList.innerHTML = '<div class="text-muted py-2">Ingen skriv ennå.</div>';
@@ -476,16 +478,18 @@ async function loadWriteFolder() {
 }
 
 async function loadRecent() {
-  if (activeRecentFilter === 'audio') {
-    await loadAudioFolder();
+  const myFilter = activeRecentFilter;
+  if (myFilter === 'audio') {
+    await loadAudioFolder(myFilter);
     return;
   }
-  if (activeRecentFilter === 'write') {
-    await loadWriteFolder();
+  if (myFilter === 'write') {
+    await loadWriteFolder(myFilter);
     return;
   }
   try {
     currentEntries = await getEntries();
+    if (activeRecentFilter !== myFilter) return;
     const entries = currentEntries;
     if (entries.length === 0) {
       recentSection.classList.add('d-none');
