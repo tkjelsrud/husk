@@ -14,15 +14,8 @@ test('validateEntryText rejects empty input', () => {
   });
 });
 
-test('validateEntryText rejects more than five lines', () => {
-  assert.deepEqual(validateEntryText('1\n2\n3\n4\n5\n6'), {
-    ok: false,
-    message: 'Bruk maks 5 linjer.'
-  });
-});
-
-test('validateEntryText accepts one to five lines', () => {
-  assert.deepEqual(validateEntryText('1\n2\n3'), { ok: true });
+test('validateEntryText accepts multiple lines', () => {
+  assert.deepEqual(validateEntryText('1\n2\n3\n4\n5\n6'), { ok: true });
 });
 
 test('validateCategory rejects invalid category', () => {
@@ -57,10 +50,7 @@ test('validateEntryText accepts multi-line axiom text with attribution', () => {
   assert.deepEqual(validateEntryText(axiom), { ok: true });
 });
 
-test('validateEntryText rejects axiom text exceeding five lines', () => {
+test('validateEntryText accepts axiom text with more than five lines', () => {
   const tooLong = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n~ Source';
-  assert.deepEqual(validateEntryText(tooLong), {
-    ok: false,
-    message: 'Bruk maks 5 linjer.'
-  });
+  assert.deepEqual(validateEntryText(tooLong), { ok: true });
 });

@@ -12,11 +12,6 @@ export function validateEntryText(value) {
     return { ok: false, message: 'Skriv minst en linje.' };
   }
 
-  const lines = normalized.split('\n');
-  if (lines.length > 5) {
-    return { ok: false, message: 'Bruk maks 5 linjer.' };
-  }
-
   return { ok: true };
 }
 
