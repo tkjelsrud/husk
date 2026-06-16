@@ -1090,6 +1090,24 @@ body.app-auth-ready nav {
   text-decoration: underline;
 }
 
+/* Read-only "Skriv" folder on the dashboard: title + extract, links to page. */
+.write-folder-entry {
+  color: #1d1d1b;
+  text-decoration: none;
+}
+
+.write-folder-entry:hover .write-folder-title {
+  text-decoration: underline;
+}
+
+.write-folder-title {
+  font-weight: 600;
+}
+
+.write-folder-extract {
+  color: #9a8c7a;
+}
+
 .write-empty-state {
   flex: 1;
   display: flex;

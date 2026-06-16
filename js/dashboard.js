@@ -5,6 +5,7 @@ import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
 import { getAudioNotes } from './audio-db.js';
+import { getDocuments } from './docs-db.js';
 
 const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
 function renderTouchDots(meta) {
@@ -445,9 +446,42 @@ async function loadAudioFolder() {
   }
 }
 
+function makeExtract(content) {
+  const flat = String(content || '').replace(/\s+/g, ' ').trim();
+  return flat.length > 100 ? `${flat.slice(0, 100)}…` : flat;
+}
+
+async function loadWriteFolder() {
+  try {
+    const docs = (await getDocuments()).filter((d) => !d.archived);
+    recentSection.classList.remove('d-none');
+    if (docs.length === 0) {
+      recentList.innerHTML = '<div class="text-muted py-2">Ingen skriv ennå.</div>';
+      return;
+    }
+    recentList.innerHTML = docs.map((d) => {
+      const id = encodeURIComponent(d.id);
+      const title = escapeHtml(d.title || '(uten tittel)');
+      const extract = escapeHtml(makeExtract(d.content));
+      const date = escapeHtml(formatShortDate(d.updatedAt));
+      const extractHtml = extract ? `<span class="write-folder-extract"> — ${extract}</span>` : '';
+      return `<a class="recent-entry write-folder-entry" href="write.html#${id}">
+        <span class="recent-entry-text"><span class="write-folder-title">${title}</span>${extractHtml}</span>
+        <span class="recent-entry-date">${date}</span>
+      </a>`;
+    }).join('');
+  } catch (err) {
+    handleFirestoreError(err, 'Kunne ikke laste skriv.');
+  }
+}
+
 async function loadRecent() {
   if (activeRecentFilter === 'audio') {
     await loadAudioFolder();
+    return;
+  }
+  if (activeRecentFilter === 'write') {
+    await loadWriteFolder();
     return;
   }
   try {
