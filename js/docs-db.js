@@ -1,5 +1,5 @@
-import { app } from './firebase-config.js';
 import { auth } from './auth.js';
+import { db } from './firestore.js';
 import {
   addDoc,
   collection,
@@ -7,14 +7,11 @@ import {
   doc,
   getDoc,
   getDocs,
-  getFirestore,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-
-const db = getFirestore(app);
 
 export function isFirestoreAuthError(err) {
   const code = String(err?.code || '');

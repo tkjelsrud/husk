@@ -1,5 +1,6 @@
 import { app } from './firebase-config.js';
 import { auth } from './auth.js';
+import { db } from './firestore.js';
 import {
   addDoc,
   collection,
@@ -7,7 +8,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  getFirestore,
   orderBy,
   query,
   serverTimestamp,
@@ -21,7 +21,6 @@ import {
   uploadBytes,
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
 
-const db = getFirestore(app);
 const storage = getStorage(app);
 
 export const MAX_AUDIO_BYTES = 30 * 1024 * 1024; // 30 MB

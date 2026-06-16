@@ -1,12 +1,11 @@
-import { app } from './firebase-config.js';
 import { auth } from './auth.js';
+import { db } from './firestore.js';
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
   getDocs,
-  getFirestore,
   query,
   serverTimestamp,
   updateDoc,
@@ -15,8 +14,6 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import { assignSequentialSortOrders, compareEntries, hasSortOrder, SORT_ORDER_STEP, sortEntries } from './lib/entry-order.js';
 import { needsBackendProcessing } from './lib/entry-validation.js';
-
-const db = getFirestore(app);
 
 export function isFirestoreAuthError(err) {
   const code = String(err?.code || '');
