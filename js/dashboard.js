@@ -4,6 +4,7 @@ import { normalizeEntryText, validateCategory, validateEntryText } from './lib/e
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
+import { getAudioNotes } from './audio-db.js';
 
 const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
 function renderTouchDots(meta) {
@@ -29,6 +30,10 @@ const statusMsg = document.getElementById('status-msg');
 
 let currentUser = null;
 let activeRecentFilter = 'general';
+
+// Inline audio playback for the read-only "Lyd" folder.
+let audioPlayer = null;
+let audioPlayingBtn = null;
 let currentEntries = [];
 let currentFilteredEntries = [];
 let currentRenderedEntries = [];
@@ -384,7 +389,67 @@ function resetSwipe() {
   };
 }
 
+function stopAudioPlayback() {
+  if (audioPlayer) {
+    audioPlayer.pause();
+    audioPlayer = null;
+  }
+  if (audioPlayingBtn) {
+    audioPlayingBtn.textContent = '▶';
+    audioPlayingBtn.classList.remove('playing');
+    audioPlayingBtn = null;
+  }
+}
+
+function toggleAudioPlay(btn) {
+  const src = btn.dataset.audioSrc;
+  if (!src) return;
+  if (audioPlayingBtn === btn) {
+    stopAudioPlayback();
+    return;
+  }
+  stopAudioPlayback();
+  audioPlayer = new Audio(src);
+  audioPlayingBtn = btn;
+  btn.textContent = '⏸';
+  btn.classList.add('playing');
+  audioPlayer.addEventListener('ended', stopAudioPlayback);
+  audioPlayer.play().catch((err) => {
+    console.error('Audio playback failed:', err);
+    stopAudioPlayback();
+  });
+}
+
+async function loadAudioFolder() {
+  try {
+    const notes = await getAudioNotes();
+    recentSection.classList.remove('d-none');
+    if (notes.length === 0) {
+      recentList.innerHTML = '<div class="text-muted py-2">Ingen lydnotater ennå.</div>';
+      return;
+    }
+    recentList.innerHTML = notes.map((n) => {
+      const title = escapeHtml(n.title || '(uten tittel)');
+      const date = escapeHtml(formatShortDate(n.updatedAt));
+      const src = escapeAttr(n.audioUrl || '');
+      const id = encodeURIComponent(n.id);
+      return `<div class="recent-entry audio-folder-entry">
+        <button class="audio-folder-play" type="button" aria-label="Spill av"
+                data-audio-play data-audio-src="${src}">▶</button>
+        <a class="recent-entry-text audio-folder-link" href="audio.html#${id}">${title}</a>
+        <span class="recent-entry-date">${date}</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    handleFirestoreError(err, 'Kunne ikke laste lydnotater.');
+  }
+}
+
 async function loadRecent() {
+  if (activeRecentFilter === 'audio') {
+    await loadAudioFolder();
+    return;
+  }
   try {
     currentEntries = await getEntries();
     const entries = currentEntries;
@@ -469,6 +534,7 @@ if (recentFilterTabs) {
     const nextFilter = button.dataset.filterTab || 'general';
     if (nextFilter === activeRecentFilter) return;
 
+    stopAudioPlayback();
     collapseForm();
     activeRecentFilter = nextFilter;
     updateRecentFilterTabs();
@@ -479,6 +545,12 @@ if (recentFilterTabs) {
 updateRecentFilterTabs();
 
 recentList.addEventListener('click', (e) => {
+  const playBtn = e.target.closest('[data-audio-play]');
+  if (playBtn) {
+    e.preventDefault();
+    toggleAudioPlay(playBtn);
+    return;
+  }
   if (dragState.moved || e.target.closest('[data-drag-handle]')) return;
   const row = e.target.closest('[data-edit-id]');
   if (!row) return;

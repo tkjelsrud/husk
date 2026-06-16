@@ -1054,6 +1054,42 @@ body.app-auth-ready nav {
   font-style: italic;
 }
 
+/* Read-only "Lyd" folder on the dashboard: inline play + link to the page. */
+.audio-folder-play {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid #cdd8de;
+  background: #dff5fd;
+  color: #15445a;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.audio-folder-play:hover {
+  background: #ccecf9;
+}
+
+.audio-folder-play.playing {
+  background: #15445a;
+  color: #fff;
+  border-color: #15445a;
+}
+
+.audio-folder-link {
+  color: #1d1d1b;
+  text-decoration: none;
+}
+
+.audio-folder-link:hover {
+  text-decoration: underline;
+}
+
 .write-empty-state {
   flex: 1;
   display: flex;
