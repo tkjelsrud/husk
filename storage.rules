@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAllowedUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'tkjelsrud@gmail.com',
+          'anitalienhansen@gmail.com'
+        ];
+    }
+    // Each user's uploaded audio sketches live under their own uid folder.
+    match /audionotes/{uid}/{fileName} {
+      allow read: if isAllowedUser();
+      allow write: if isAllowedUser()
+        && request.auth.uid == uid
+        && request.resource.size < 30 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+      allow delete: if isAllowedUser();
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

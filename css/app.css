@@ -1003,6 +1003,21 @@ body.app-auth-ready nav {
   color: #9a8c7a;
 }
 
+/* Archived writings: greyed-out title, sorted beneath active ones. */
+.write-doc-archived .write-doc-title {
+  color: #a99e8d;
+  font-weight: 500;
+}
+
+.write-archive-btn {
+  color: #6a5233;
+  font-size: 0.88rem;
+}
+
+.write-archive-btn:hover {
+  color: #3f2a14;
+}
+
 .write-panel {
   display: flex;
   flex-direction: column;
@@ -1020,6 +1035,23 @@ body.app-auth-ready nav {
 
 .write-back-btn:hover {
   color: #3f2a14;
+}
+
+.audio-player-wrap {
+  padding: 0 1.25rem 0.5rem;
+}
+
+.audio-player {
+  width: 100%;
+}
+
+.audio-file-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.audio-text-empty {
+  font-style: italic;
 }
 
 .write-empty-state {

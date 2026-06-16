@@ -19,6 +19,7 @@ const editMode = document.getElementById('edit-mode');
 const viewTitle = document.getElementById('view-title');
 const viewBody = document.getElementById('view-body');
 const editBtn = document.getElementById('edit-btn');
+const archiveBtn = document.getElementById('archive-btn');
 const deleteBtn = document.getElementById('delete-btn');
 
 const editTitle = document.getElementById('edit-title');
@@ -78,7 +79,7 @@ function renderDocList(docs) {
   }
   docList.innerHTML = docs.map((d) => `
     <li>
-      <button class="write-doc-item ${d.id === currentDocId ? 'active' : ''}"
+      <button class="write-doc-item ${d.id === currentDocId ? 'active' : ''} ${d.archived ? 'write-doc-archived' : ''}"
               type="button" data-doc-id="${escapeHtml(d.id)}">
         <span class="write-doc-title">${escapeHtml(d.title || '(uten tittel)')}</span>
         <span class="write-doc-date">${formatDate(d.updatedAt)}</span>
@@ -106,6 +107,8 @@ function showViewMode(doc) {
   if (window.hljs) {
     viewBody.querySelectorAll('pre code').forEach((block) => window.hljs.highlightElement(block));
   }
+
+  archiveBtn.textContent = doc.archived ? 'Hent fram' : 'Arkiver';
 
   viewPanel.classList.add('write-panel-active');
   backBtn.classList.remove('d-none');
@@ -216,6 +219,24 @@ saveBtn.addEventListener('click', async () => {
     handleFirestoreError(err, 'Kunne ikke lagre.');
   } finally {
     saveBtn.disabled = false;
+  }
+});
+
+archiveBtn.addEventListener('click', async () => {
+  if (!currentDocId) return;
+  const doc = currentDocs.find((d) => d.id === currentDocId);
+  if (!doc) return;
+  const nextArchived = !doc.archived;
+  archiveBtn.disabled = true;
+  try {
+    await updateDocument(currentDocId, { archived: nextArchived });
+    await loadDocs();
+    const updated = currentDocs.find((d) => d.id === currentDocId);
+    if (updated) showViewMode(updated);
+  } catch (err) {
+    handleFirestoreError(err, 'Kunne ikke endre arkivstatus.');
+  } finally {
+    archiveBtn.disabled = false;
   }
 });
 
