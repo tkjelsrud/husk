@@ -19,8 +19,10 @@ const viewMode = document.getElementById('view-mode');
 const editMode = document.getElementById('edit-mode');
 
 const viewTitle = document.getElementById('view-title');
+const viewTouchDots = document.getElementById('view-touch-dots');
 const viewPlayer = document.getElementById('view-player');
 const viewBody = document.getElementById('view-body');
+const archiveBtn = document.getElementById('archive-btn');
 const editBtn = document.getElementById('edit-btn');
 const deleteBtn = document.getElementById('delete-btn');
 
@@ -29,6 +31,7 @@ const editText = document.getElementById('edit-text');
 const fileField = document.getElementById('file-field');
 const fileInput = document.getElementById('audio-file');
 const fileError = document.getElementById('file-error');
+const touchDotsEl = document.getElementById('audio-touch-dots');
 const saveBtn = document.getElementById('save-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
@@ -36,13 +39,45 @@ const newBtn = document.getElementById('new-btn');
 const backBtn = document.getElementById('back-btn');
 
 const ACCEPTED_EXT = ['mp3', 'wav', 'm4a', 'aac', 'ogg'];
+const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
 
 let currentUser = null;
 let currentNoteId = null;
 let currentNotes = [];
 let isNewNote = false;
+let currentTouches = 0;
 
 logoutButton.addEventListener('click', () => logout());
+
+function renderTouchPips(meta) {
+  const n = Number(meta?.touches) || 0;
+  if (n <= 0) return '';
+  const color = TOUCH_COLORS[Math.min(n, 5)];
+  return Array.from({ length: n }, () =>
+    `<span class="touch-dot-pip" style="background:${color}"></span>`
+  ).join('');
+}
+
+function updateTouchDots() {
+  const color = TOUCH_COLORS[currentTouches] || '';
+  touchDotsEl.querySelectorAll('.touch-dot-btn').forEach((btn, i) => {
+    if (i < currentTouches) {
+      btn.style.background = color;
+      btn.classList.add('filled');
+    } else {
+      btn.style.background = '';
+      btn.classList.remove('filled');
+    }
+  });
+}
+
+touchDotsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.touch-dot-btn');
+  if (!btn) return;
+  const dot = parseInt(btn.dataset.dot, 10);
+  currentTouches = currentTouches === dot ? 0 : dot;
+  updateTouchDots();
+});
 
 function getNoteIdFromHash() {
   return decodeURIComponent(window.location.hash.replace(/^#/, '')) || null;
@@ -86,7 +121,7 @@ function renderNoteList(notes) {
   }
   noteList.innerHTML = notes.map((n) => `
     <li>
-      <button class="write-doc-item ${n.id === currentNoteId ? 'active' : ''}"
+      <button class="write-doc-item ${n.id === currentNoteId ? 'active' : ''} ${n.archived ? 'write-doc-archived' : ''}"
               type="button" data-note-id="${escapeHtml(n.id)}">
         <span class="write-doc-title">${escapeHtml(n.title || '(uten tittel)')}</span>
         <span class="write-doc-date">${formatDate(n.updatedAt)}</span>
@@ -113,8 +148,10 @@ function showViewMode(note) {
   viewMode.classList.remove('d-none');
 
   viewTitle.textContent = note.title || '(uten tittel)';
+  viewTouchDots.innerHTML = renderTouchPips(note.meta);
   viewPlayer.src = note.audioUrl || '';
   viewBody.innerHTML = renderText(note.text);
+  archiveBtn.textContent = note.archived ? 'Hent fram' : 'Arkiver';
 
   viewPanel.classList.add('write-panel-active');
   backBtn.classList.remove('d-none');
@@ -132,6 +169,8 @@ function showEditMode(note) {
   // The audio file can only be chosen when creating a note.
   fileField.classList.toggle('d-none', !isNewNote);
   saveBtn.textContent = isNewNote ? 'Last opp' : 'Lagre';
+  currentTouches = Number(note?.meta?.touches) || 0;
+  updateTouchDots();
 
   viewPanel.classList.add('write-panel-active');
   backBtn.classList.remove('d-none');
@@ -235,28 +274,56 @@ saveBtn.addEventListener('click', async () => {
   saveBtn.disabled = true;
   const originalLabel = saveBtn.textContent;
   try {
+    let savedId = currentNoteId;
+    let savedAudioUrl = '';
+
     if (isNewNote) {
       saveBtn.textContent = 'Laster opp…';
       const { audioPath, audioUrl, mimeType } = await uploadAudioFile(file, currentUser);
+      savedAudioUrl = audioUrl;
       const ref = await addAudioNote(
-        { title, text, audioPath, audioUrl, mimeType, source: 'upload' },
+        { title, text, audioPath, audioUrl, mimeType, source: 'upload', touches: currentTouches },
         currentUser
       );
-      currentNoteId = ref.id;
-      setNoteIdInHash(ref.id);
+      savedId = ref.id;
+      currentNoteId = savedId;
+      setNoteIdInHash(savedId);
       isNewNote = false;
     } else {
-      await updateAudioNote(currentNoteId, { title, text });
+      await updateAudioNote(currentNoteId, { title, text, touches: currentTouches });
     }
     saveBtn.textContent = 'Lagre';
     await loadNotes();
-    const updated = currentNotes.find((n) => n.id === currentNoteId);
-    if (updated) showViewMode(updated);
+    // loadNotes() may reset currentNoteId to null if Firestore doesn't yet return
+    // the note we just wrote (intermittent read issue). Restore and fall back to
+    // locally-known data so view mode is always shown after a successful save.
+    currentNoteId = savedId;
+    const updated = currentNotes.find((n) => n.id === savedId)
+      || { id: savedId, title, text, audioUrl: savedAudioUrl };
+    showViewMode(updated);
   } catch (err) {
     saveBtn.textContent = originalLabel;
     handleFirestoreError(err, 'Kunne ikke lagre lydnotatet.');
   } finally {
     saveBtn.disabled = false;
+  }
+});
+
+archiveBtn.addEventListener('click', async () => {
+  if (!currentNoteId) return;
+  const note = currentNotes.find((n) => n.id === currentNoteId);
+  if (!note) return;
+  const nextArchived = !note.archived;
+  archiveBtn.disabled = true;
+  try {
+    await updateAudioNote(currentNoteId, { archived: nextArchived });
+    await loadNotes();
+    const updated = currentNotes.find((n) => n.id === currentNoteId);
+    if (updated) showViewMode(updated);
+  } catch (err) {
+    handleFirestoreError(err, 'Kunne ikke endre arkivstatus.');
+  } finally {
+    archiveBtn.disabled = false;
   }
 });
 

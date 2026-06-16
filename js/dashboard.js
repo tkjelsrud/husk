@@ -432,13 +432,16 @@ async function loadAudioFolder(filter) {
     }
     recentList.innerHTML = notes.map((n) => {
       const title = escapeHtml(n.title || '(uten tittel)');
+      const extract = escapeHtml(makeExtract(n.text));
       const date = escapeHtml(formatShortDate(n.updatedAt));
       const src = escapeAttr(n.audioUrl || '');
       const id = encodeURIComponent(n.id);
+      const extractHtml = extract ? `<span class="audio-folder-extract"> — ${extract}</span>` : '';
       return `<div class="recent-entry audio-folder-entry">
         <button class="audio-folder-play" type="button" aria-label="Spill av"
                 data-audio-play data-audio-src="${src}">▶</button>
-        <a class="recent-entry-text audio-folder-link" href="audio.html#${id}">${title}</a>
+        <a class="recent-entry-text audio-folder-link" href="audio.html#${id}"><span class="audio-folder-title">${title}</span>${extractHtml}</a>
+        <span class="touch-dots recent-entry-touch-dots">${renderTouchDots(n.meta)}</span>
         <span class="recent-entry-date">${date}</span>
       </div>`;
     }).join('');
@@ -576,6 +579,7 @@ if (recentFilterTabs) {
     collapseForm();
     activeRecentFilter = nextFilter;
     updateRecentFilterTabs();
+    recentList.innerHTML = '';
     loadRecent();
   });
 }

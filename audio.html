@@ -45,8 +45,12 @@
 
       <div id="view-mode" class="d-none">
         <div class="write-view-header">
-          <h1 id="view-title" class="write-view-title"></h1>
+          <div class="audio-view-title-wrap">
+            <h1 id="view-title" class="write-view-title"></h1>
+            <div id="view-touch-dots" class="touch-dots"></div>
+          </div>
           <div class="write-view-actions">
+            <button id="archive-btn" class="btn btn-link write-archive-btn" type="button">Arkiver</button>
             <button id="edit-btn" class="btn btn-outline-secondary btn-sm" type="button">Rediger</button>
             <button id="delete-btn" class="btn btn-link write-delete-btn" type="button">Slett</button>
           </div>
@@ -70,7 +74,16 @@
           <textarea id="edit-text" class="form-control write-content-input"
                     placeholder="Notater: hva er ideen, tempo/toneart, hvor den skal brukes…" spellcheck="false"></textarea>
           <div class="write-edit-footer">
-            <button id="cancel-edit-btn" class="btn btn-link" type="button">Avbryt</button>
+            <div class="d-flex align-items-center gap-2">
+              <button id="cancel-edit-btn" class="btn btn-link" type="button">Avbryt</button>
+              <div class="touch-dot-row" id="audio-touch-dots" role="group" aria-label="Fremgang">
+                <button class="touch-dot-btn" data-dot="1" type="button" aria-label="1"></button>
+                <button class="touch-dot-btn" data-dot="2" type="button" aria-label="2"></button>
+                <button class="touch-dot-btn" data-dot="3" type="button" aria-label="3"></button>
+                <button class="touch-dot-btn" data-dot="4" type="button" aria-label="4"></button>
+                <button class="touch-dot-btn" data-dot="5" type="button" aria-label="5"></button>
+              </div>
+            </div>
             <button id="save-btn" class="btn btn-dark" type="button">Lagre</button>
           </div>
         </div>

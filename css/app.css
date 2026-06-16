@@ -46,6 +46,7 @@ body.app-auth-ready nav {
 .brand-lockup .brand-usk {
   position: relative;
   top: 1px;
+  left: -2px;
 }
 
 .navbar .nav-link {
@@ -1059,16 +1060,21 @@ body.app-auth-ready nav {
   font-style: italic;
 }
 
+.audio-view-title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
 /* Read-only "Lyd" folder on the dashboard: inline play + link to the page. */
 .audio-folder-play {
   flex-shrink: 0;
-  width: 2rem;
-  height: 2rem;
+  width: 1.8rem;
+  height: 1.8rem;
   border-radius: 50%;
   border: 1px solid #cdd8de;
   background: #dff5fd;
   color: #15445a;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -1089,10 +1095,23 @@ body.app-auth-ready nav {
 .audio-folder-link {
   color: #1d1d1b;
   text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.audio-folder-link:hover {
+.audio-folder-link:hover .audio-folder-title {
   text-decoration: underline;
+}
+
+.audio-folder-title {
+  font-weight: 600;
+}
+
+.audio-folder-extract {
+  color: #6c757d;
+  font-weight: 400;
 }
 
 /* Read-only "Skriv" folder on the dashboard: title + extract, links to page. */

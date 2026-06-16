@@ -64,11 +64,26 @@ function resolveContentType(file) {
   return EXT_MIME[fileExtension(file)] || file?.type || 'application/octet-stream';
 }
 
+function timestampMillis(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+  const ms = date.getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
 export function getAudioNotes() {
   return withFirestoreAuthRetry(async () => {
     const q = query(collection(db, 'audionotes'), orderBy('updatedAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const notes = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // Active notes on top, archived beneath; each group newest-first.
+    notes.sort((a, b) => {
+      const arch = (a.archived ? 1 : 0) - (b.archived ? 1 : 0);
+      if (arch) return arch;
+      return timestampMillis(b.updatedAt) - timestampMillis(a.updatedAt);
+    });
+    return notes;
   });
 }
 
@@ -93,29 +108,32 @@ export async function uploadAudioFile(file, user) {
   return { audioPath: path, audioUrl: url, mimeType: contentType };
 }
 
-export function addAudioNote({ title, text, audioPath, audioUrl, mimeType, source }, user) {
-  return withFirestoreAuthRetry(() =>
-    addDoc(collection(db, 'audionotes'), {
-      title,
-      text: text || '',
-      audioPath,
-      audioUrl,
-      mimeType: mimeType || '',
-      source: source || 'upload',
-      addedByUid: user.uid,
-      addedByEmail: user.email || '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    })
-  );
+export function addAudioNote({ title, text, audioPath, audioUrl, mimeType, source, touches }, user) {
+  const data = {
+    title,
+    text: text || '',
+    audioPath,
+    audioUrl,
+    mimeType: mimeType || '',
+    source: source || 'upload',
+    archived: false,
+    addedByUid: user.uid,
+    addedByEmail: user.email || '',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  if (typeof touches === 'number' && touches > 0) data.meta = { touches };
+  return withFirestoreAuthRetry(() => addDoc(collection(db, 'audionotes'), data));
 }
 
 // Only the text/title is editable after creation; the audio file is immutable
 // (replace by deleting and re-uploading) to keep the storage/rules model simple.
-export function updateAudioNote(id, { title, text }) {
+export function updateAudioNote(id, { title, text, touches, archived }) {
   const updates = { updatedAt: serverTimestamp() };
   if (title !== undefined) updates.title = title;
   if (text !== undefined) updates.text = text;
+  if (typeof touches === 'number') updates['meta.touches'] = touches;
+  if (archived !== undefined) updates.archived = archived;
   return withFirestoreAuthRetry(() => updateDoc(doc(db, 'audionotes', id), updates));
 }
 
