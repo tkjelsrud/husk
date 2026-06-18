@@ -101,6 +101,35 @@ def test_process_entry_calendar_eligible_for_family_with_date(mock_sync):
     assert result['processingDetails']['calendar']['eligible'] is True
 
 
+# --- Norwegian month name date extraction ---
+
+@patch('backend.processor.entry_processor.sync_calendar_event')
+def test_process_entry_norwegian_month_name(mock_sync):
+    mock_sync.return_value = {'calendarEventCreated': False, 'calendarSyncStatus': 'skipped', 'calendarSyncTime': None}
+    entry = {'textInput': 'Thomas lege 28. juli 2026 kl. 08:30 - 08:45', 'category': 'family'}
+    result = process_entry(_make_settings(), entry, entry_id='abc')
+    assert result['dueDate'] is not None
+    assert result['dueDate'].day == 28
+    assert result['dueDate'].month == 7
+    assert result['dueDate'].year == 2026
+    assert result['dueDate'].hour == 8
+    assert result['dueDate'].minute == 30
+    assert result['dueEnd'] is not None
+    assert result['dueEnd'].hour == 8
+    assert result['dueEnd'].minute == 45
+    assert result['processingDetails']['calendar']['eligible'] is True
+
+
+@patch('backend.processor.entry_processor.sync_calendar_event')
+def test_process_entry_norwegian_month_name_no_year(mock_sync):
+    mock_sync.return_value = {'calendarEventCreated': False, 'calendarSyncStatus': 'skipped', 'calendarSyncTime': None}
+    entry = {'textInput': 'Fotballtrening 3. september kl. 17-19', 'category': 'family'}
+    result = process_entry(_make_settings(), entry, entry_id='abc')
+    assert result['dueDate'] is not None
+    assert result['dueDate'].day == 3
+    assert result['dueDate'].month == 9
+
+
 # --- _extract_time_range ---
 
 def test_extract_time_range_dash_with_end_minutes():
