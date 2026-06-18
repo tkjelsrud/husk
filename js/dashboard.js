@@ -24,10 +24,51 @@ const recentFilterTabs = document.getElementById('recent-filter-tabs');
 const form = document.getElementById('entry-form');
 const textField = document.getElementById('entry-text');
 const categoryField = document.getElementById('entry-category');
+const categoryPickerBtn = document.getElementById('category-picker-btn');
+const categoryPickerLabel = document.getElementById('category-picker-label');
+const categoryPickerList = document.getElementById('category-picker-list');
 const submitButton = document.getElementById('submit-btn');
 const logoutButton = document.getElementById('logout-btn');
 const userLabel = document.getElementById('user-label');
 const statusMsg = document.getElementById('status-msg');
+
+const CATEGORY_LABELS = {
+  general: 'Generelt', work: 'Jobb', creative: 'Kreativt',
+  houseproj: 'Houseproj', family: 'Familie', huskmcp: 'Husk MCP', axiom: 'Aksiomat',
+};
+
+function setCategoryValue(value) {
+  categoryField.value = value;
+  categoryPickerLabel.textContent = CATEGORY_LABELS[value] || value;
+  categoryPickerList.querySelectorAll('[role="option"]').forEach((el) => {
+    el.setAttribute('aria-selected', el.dataset.value === value ? 'true' : 'false');
+  });
+}
+
+function closeCategoryPicker() {
+  categoryPickerList.hidden = true;
+  categoryPickerBtn.setAttribute('aria-expanded', 'false');
+}
+
+categoryPickerBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = !categoryPickerList.hidden;
+  categoryPickerList.hidden = isOpen;
+  categoryPickerBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+});
+
+categoryPickerList.addEventListener('click', (e) => {
+  const option = e.target.closest('[role="option"]');
+  if (!option) return;
+  setCategoryValue(option.dataset.value);
+  closeCategoryPicker();
+});
+
+document.addEventListener('click', (e) => {
+  if (!categoryPickerBtn.closest('#category-picker').contains(e.target)) {
+    closeCategoryPicker();
+  }
+});
 
 let currentUser = null;
 let activeRecentFilter = 'general';
@@ -124,7 +165,7 @@ form.addEventListener('submit', async (event) => {
       category
     }, currentUser);
     form.reset();
-    categoryField.value = getDefaultCategory();
+    setCategoryValue(getDefaultCategory());
     showStatus('success', 'Lagret.');
     collapseForm(); // Collapse form after successful save
     textField.focus();
@@ -586,7 +627,7 @@ if (recentFilterTabs) {
     stopAudioPlayback();
     collapseForm();
     activeRecentFilter = nextFilter;
-    categoryField.value = getDefaultCategory();
+    setCategoryValue(getDefaultCategory());
     updateRecentFilterTabs();
     updateTabBodyClass();
     recentList.innerHTML = '';
