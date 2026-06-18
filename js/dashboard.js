@@ -32,6 +32,14 @@ const statusMsg = document.getElementById('status-msg');
 let currentUser = null;
 let activeRecentFilter = 'general';
 
+function getDefaultCategory() {
+  return activeRecentFilter === 'work' ? 'work' : 'general';
+}
+
+function updateTabBodyClass() {
+  document.body.classList.toggle('tab-work', activeRecentFilter === 'work');
+}
+
 // Inline audio playback for the read-only "Lyd" folder.
 let audioPlayer = null;
 let audioPlayingBtn = null;
@@ -116,7 +124,7 @@ form.addEventListener('submit', async (event) => {
       category
     }, currentUser);
     form.reset();
-    categoryField.value = 'unknown';
+    categoryField.value = getDefaultCategory();
     showStatus('success', 'Lagret.');
     collapseForm(); // Collapse form after successful save
     textField.focus();
@@ -578,13 +586,16 @@ if (recentFilterTabs) {
     stopAudioPlayback();
     collapseForm();
     activeRecentFilter = nextFilter;
+    categoryField.value = getDefaultCategory();
     updateRecentFilterTabs();
+    updateTabBodyClass();
     recentList.innerHTML = '';
     loadRecent();
   });
 }
 
 updateRecentFilterTabs();
+updateTabBodyClass();
 
 recentList.addEventListener('click', (e) => {
   const playBtn = e.target.closest('[data-audio-play]');
