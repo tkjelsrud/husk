@@ -85,6 +85,7 @@ function updateTabBodyClass() {
 let audioPlayer = null;
 let audioPlayingBtn = null;
 let currentEntries = [];
+let currentEntriesFetched = false;
 let currentFilteredEntries = [];
 let currentRenderedEntries = [];
 
@@ -529,7 +530,7 @@ async function loadWriteFolder(filter) {
   }
 }
 
-async function loadRecent() {
+async function loadRecent({ refetch = true } = {}) {
   const myFilter = activeRecentFilter;
   if (myFilter === 'audio') {
     await loadAudioFolder(myFilter);
@@ -540,7 +541,10 @@ async function loadRecent() {
     return;
   }
   try {
-    currentEntries = await getEntries();
+    if (refetch || !currentEntriesFetched) {
+      currentEntries = await getEntries();
+      currentEntriesFetched = true;
+    }
     if (activeRecentFilter !== myFilter) return;
     const entries = currentEntries;
     if (entries.length === 0) {
@@ -631,7 +635,7 @@ if (recentFilterTabs) {
     updateRecentFilterTabs();
     updateTabBodyClass();
     recentList.innerHTML = '';
-    loadRecent();
+    loadRecent({ refetch: false });
   });
 }
 
