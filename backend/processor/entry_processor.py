@@ -30,6 +30,10 @@ def process_entry(settings, entry: dict, entry_id: str | None = None):
             start_t, end_t = time_range
             due_date = datetime.combine(due_date.date(), start_t, tzinfo=DEFAULT_TIMEZONE)
             due_end = datetime.combine(due_date.date(), end_t, tzinfo=DEFAULT_TIMEZONE)
+        else:
+            single_t = _extract_single_time(text_input)
+            if single_t is not None:
+                due_date = datetime.combine(due_date.date(), single_t, tzinfo=DEFAULT_TIMEZONE)
 
     priority = _normalize_priority(_extract_priority(text_input))
     category = _normalize_category(entry.get('category'))
@@ -127,6 +131,10 @@ TIME_RANGE_RE = re.compile(
     r'(?<!\d)(\d{1,2})(?:[.:](\d{2}))?\s*[-–]\s*(\d{1,2})(?:[.:](\d{2}))?(?!\d)'
 )
 
+# Matches a single time like "9:45" or "14.30" but not dates like "15.06.2026"
+# (the negative lookahead rejects matches followed by another digit or dot).
+SINGLE_TIME_RE = re.compile(r'(?<!\d)(\d{1,2})[.:](\d{2})(?![\d.])')
+
 NORWEGIAN_MONTHS = {
     'januar': 1, 'februar': 2, 'mars': 3, 'april': 4,
     'mai': 5, 'juni': 6, 'juli': 7, 'august': 8,
@@ -191,6 +199,18 @@ def _extract_time_range(text_input: str):
     if not (0 <= sh <= 23 and 0 <= sm <= 59 and 0 <= eh <= 23 and 0 <= em <= 59):
         return None
     return time(sh, sm), time(eh, em)
+
+
+def _extract_single_time(text_input: str):
+    """Return a time if a single time like '9:45' or '14.30' is found, else None."""
+    match = SINGLE_TIME_RE.search(text_input)
+    if not match:
+        return None
+    h = int(match.group(1))
+    m = int(match.group(2))
+    if not (0 <= h <= 23 and 0 <= m <= 59):
+        return None
+    return time(h, m)
 
 
 def _at_default_time(target_date):

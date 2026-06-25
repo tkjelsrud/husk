@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from backend.processor.entry_processor import process_entry, _extract_time_range
+from backend.processor.entry_processor import process_entry, _extract_time_range, _extract_single_time
 from backend.processor.calendar_client import _should_sync
 
 
@@ -153,7 +153,62 @@ def test_extract_time_range_does_not_match_date():
     assert _extract_time_range('Noe den 9.6') is None
 
 
+# --- _extract_single_time ---
+
+def test_extract_single_time_colon_separator():
+    t = _extract_single_time('Barnebursdag 26.8 9:45')
+    assert t is not None
+    assert t.hour == 9 and t.minute == 45
+
+
+def test_extract_single_time_dot_separator():
+    t = _extract_single_time('Møte 14.30')
+    assert t is not None
+    assert t.hour == 14 and t.minute == 30
+
+
+def test_extract_single_time_none_when_absent():
+    assert _extract_single_time('Tannlege 15.06.2026') is None
+
+
+def test_extract_single_time_does_not_match_date_with_year():
+    # "15.06" in "15.06.2026" is followed by "." — should not be treated as a time
+    assert _extract_single_time('Tannlege 15.06.2026') is None
+
+
+def test_extract_single_time_does_not_match_single_digit_month():
+    # "26.8" has only one digit after the dot — not a valid mm match
+    assert _extract_single_time('26.8 ingen tid') is None
+
+
 # --- process_entry: time range applied to dueDate ---
+
+@patch('backend.processor.entry_processor.sync_calendar_event')
+def test_process_entry_single_time_sets_due_date_time(mock_sync):
+    mock_sync.return_value = {'calendarEventCreated': False, 'calendarSyncStatus': 'skipped', 'calendarSyncTime': None}
+    entry = {'textInput': 'Barnebursdag 26.8 9:45', 'category': 'family'}
+    result = process_entry(_make_settings(), entry, entry_id='abc')
+    assert result['dueDate'] is not None
+    assert result['dueDate'].day == 26
+    assert result['dueDate'].month == 8
+    assert result['dueDate'].hour == 9
+    assert result['dueDate'].minute == 45
+    assert result['dueEnd'] is None
+
+
+@patch('backend.processor.entry_processor.sync_calendar_event')
+def test_process_entry_single_time_dot_format(mock_sync):
+    mock_sync.return_value = {'calendarEventCreated': False, 'calendarSyncStatus': 'skipped', 'calendarSyncTime': None}
+    entry = {'textInput': 'Tannlege 15.06.2026 kl. 09:15', 'category': 'family'}
+    result = process_entry(_make_settings(), entry, entry_id='abc')
+    assert result['dueDate'] is not None
+    assert result['dueDate'].day == 15
+    assert result['dueDate'].month == 6
+    assert result['dueDate'].year == 2026
+    assert result['dueDate'].hour == 9
+    assert result['dueDate'].minute == 15
+    assert result['dueEnd'] is None
+
 
 @patch('backend.processor.entry_processor.sync_calendar_event')
 def test_process_entry_time_range_sets_start_time(mock_sync):
