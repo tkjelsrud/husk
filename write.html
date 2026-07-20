@@ -59,6 +59,16 @@
 
       <div id="edit-mode" class="d-none">
         <div class="write-edit-form">
+          <div id="draft-recovery" class="write-draft-recovery d-none" role="status" aria-live="polite">
+            <div>
+              <strong>Lokal kladd funnet.</strong>
+              <span id="draft-recovery-text" class="text-muted small d-block"></span>
+            </div>
+            <div class="write-draft-actions">
+              <button id="use-draft-btn" class="btn btn-outline-secondary btn-sm" type="button">Fortsett lokal versjon</button>
+              <button id="discard-draft-btn" class="btn btn-link btn-sm" type="button">Forkast</button>
+            </div>
+          </div>
           <input id="edit-title" class="form-control write-title-input" type="text"
                  placeholder="Tittel" maxlength="200" />
           <textarea id="edit-content" class="form-control write-content-input"

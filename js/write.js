@@ -24,6 +24,10 @@ const deleteBtn = document.getElementById('delete-btn');
 
 const editTitle = document.getElementById('edit-title');
 const editContent = document.getElementById('edit-content');
+const draftRecovery = document.getElementById('draft-recovery');
+const draftRecoveryText = document.getElementById('draft-recovery-text');
+const useDraftBtn = document.getElementById('use-draft-btn');
+const discardDraftBtn = document.getElementById('discard-draft-btn');
 const saveBtn = document.getElementById('save-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
@@ -34,6 +38,11 @@ let currentUser = null;
 let currentDocId = null;
 let currentDocs = [];
 let isNewDoc = false;
+let draftSaveTimer = null;
+
+const DRAFT_STORAGE_KEY = 'husk-write-drafts';
+const LONG_DOC_MIN_LENGTH = 250;
+const DRAFT_SAVE_DELAY_MS = 400;
 
 logoutButton.addEventListener('click', () => logout());
 
@@ -70,6 +79,126 @@ function handleFirestoreError(err, fallback) {
     return;
   }
   alert(fallback);
+}
+
+function getDraftDocKey(docId = currentDocId) {
+  return docId || '__new__';
+}
+
+function getDraftStorageKey(docId = currentDocId) {
+  return `${currentUser?.uid || 'anonymous'}:${getDraftDocKey(docId)}`;
+}
+
+function readDrafts() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(DRAFT_STORAGE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeDrafts(drafts) {
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  } catch (err) {
+    console.warn('Could not persist write draft.', err);
+  }
+}
+
+function getStoredDraft(docId = currentDocId) {
+  const draft = readDrafts()[getDraftStorageKey(docId)];
+  if (!draft || typeof draft !== 'object') return null;
+  return {
+    title: typeof draft.title === 'string' ? draft.title : '',
+    content: typeof draft.content === 'string' ? draft.content : '',
+    savedAt: typeof draft.savedAt === 'number' ? draft.savedAt : 0,
+  };
+}
+
+function clearStoredDraft(docId = currentDocId) {
+  const drafts = readDrafts();
+  delete drafts[getDraftStorageKey(docId)];
+  writeDrafts(drafts);
+}
+
+function shouldPersistDraft(title, content) {
+  return Math.max(title.trim().length, content.trim().length) >= LONG_DOC_MIN_LENGTH;
+}
+
+function formatDraftSavedAt(value) {
+  if (!value) return 'Lokal kladd er nyere enn den lagrede versjonen.';
+  return `Lokal kladd lagret ${new Intl.DateTimeFormat('nb-NO', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))}.`;
+}
+
+function showDraftRecoveryPrompt(draft) {
+  draftRecoveryText.textContent = formatDraftSavedAt(draft.savedAt);
+  draftRecovery.classList.remove('d-none');
+}
+
+function hideDraftRecoveryPrompt() {
+  draftRecovery.classList.add('d-none');
+  draftRecoveryText.textContent = '';
+}
+
+function scheduleDraftSave() {
+  if (draftSaveTimer) {
+    window.clearTimeout(draftSaveTimer);
+  }
+  draftSaveTimer = window.setTimeout(() => {
+    draftSaveTimer = null;
+    persistCurrentDraft();
+  }, DRAFT_SAVE_DELAY_MS);
+}
+
+function flushDraftSave() {
+  if (!editMode.classList.contains('d-none') && draftSaveTimer) {
+    window.clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+    persistCurrentDraft();
+  }
+}
+
+function persistCurrentDraft() {
+  if (editMode.classList.contains('d-none')) return;
+
+  const title = editTitle.value;
+  const content = editContent.value;
+  if (!shouldPersistDraft(title, content)) {
+    clearStoredDraft();
+    return;
+  }
+
+  const drafts = readDrafts();
+  drafts[getDraftStorageKey()] = {
+    title,
+    content,
+    savedAt: Date.now(),
+  };
+  writeDrafts(drafts);
+}
+
+function maybeShowDraftRecovery(doc) {
+  const draft = getStoredDraft();
+  const title = doc?.title || '';
+  const content = doc?.content || '';
+  if (!draft) {
+    hideDraftRecoveryPrompt();
+    return;
+  }
+
+  if (draft.title === title && draft.content === content) {
+    clearStoredDraft();
+    hideDraftRecoveryPrompt();
+    return;
+  }
+
+  showDraftRecoveryPrompt(draft);
 }
 
 function renderDocList(docs) {
@@ -121,6 +250,7 @@ function showEditMode(doc) {
 
   editTitle.value = doc?.title || '';
   editContent.value = doc?.content || '';
+  maybeShowDraftRecovery(doc);
   editContent.focus();
 
   viewPanel.classList.add('write-panel-active');
@@ -150,6 +280,7 @@ async function loadDocs() {
 }
 
 function selectDoc(id) {
+  flushDraftSave();
   currentDocId = id;
   setDocIdInHash(id);
   isNewDoc = false;
@@ -172,6 +303,7 @@ editBtn.addEventListener('click', () => {
 });
 
 newBtn.addEventListener('click', () => {
+  flushDraftSave();
   currentDocId = null;
   isNewDoc = true;
   renderDocList(currentDocs);
@@ -180,6 +312,12 @@ newBtn.addEventListener('click', () => {
 });
 
 cancelEditBtn.addEventListener('click', () => {
+  if (draftSaveTimer) {
+    window.clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
+  clearStoredDraft();
+  hideDraftRecoveryPrompt();
   if (isNewDoc) {
     isNewDoc = false;
     showEmptyState();
@@ -195,6 +333,7 @@ cancelEditBtn.addEventListener('click', () => {
 saveBtn.addEventListener('click', async () => {
   const title = editTitle.value.trim();
   const content = editContent.value;
+  const draftDocId = isNewDoc ? null : currentDocId;
 
   if (!title) {
     editTitle.focus();
@@ -211,6 +350,8 @@ saveBtn.addEventListener('click', async () => {
     } else {
       await updateDocument(currentDocId, { title, content });
     }
+    clearStoredDraft(draftDocId);
+    hideDraftRecoveryPrompt();
     saveBtn.textContent = 'Lagre';
     await loadDocs();
     const updated = currentDocs.find((d) => d.id === currentDocId);
@@ -260,6 +401,7 @@ deleteBtn.addEventListener('click', async () => {
 });
 
 backBtn.addEventListener('click', () => {
+  flushDraftSave();
   viewPanel.classList.remove('write-panel-active');
   backBtn.classList.add('d-none');
   currentDocId = null;
@@ -268,6 +410,32 @@ backBtn.addEventListener('click', () => {
   saveBtn.textContent = 'Lagre';
   showEmptyState();
   renderDocList(currentDocs);
+});
+
+useDraftBtn.addEventListener('click', () => {
+  const draft = getStoredDraft();
+  if (!draft) {
+    hideDraftRecoveryPrompt();
+    return;
+  }
+  editTitle.value = draft.title;
+  editContent.value = draft.content;
+  hideDraftRecoveryPrompt();
+  editContent.focus();
+  scheduleDraftSave();
+});
+
+discardDraftBtn.addEventListener('click', () => {
+  clearStoredDraft();
+  hideDraftRecoveryPrompt();
+});
+
+editTitle.addEventListener('input', scheduleDraftSave);
+editContent.addEventListener('input', scheduleDraftSave);
+
+window.addEventListener('beforeunload', () => {
+  flushDraftSave();
+  persistCurrentDraft();
 });
 
 editContent.addEventListener('keydown', (e) => {
