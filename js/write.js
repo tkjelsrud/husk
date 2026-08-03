@@ -4,10 +4,12 @@ import {
   deleteDocument,
   getDocuments,
   isFirestoreAuthError,
+  timestampMillis,
   updateDocument,
 } from './docs-db.js';
 
 const docList = document.getElementById('doc-list');
+const toastContainer = document.getElementById('write-toast-container');
 const logoutButton = document.getElementById('logout-btn');
 const userLabel = document.getElementById('user-label');
 
@@ -39,10 +41,13 @@ let currentDocId = null;
 let currentDocs = [];
 let isNewDoc = false;
 let draftSaveTimer = null;
+let lastDocsFetchAt = 0;
 
 const DRAFT_STORAGE_KEY = 'husk-write-drafts';
 const LONG_DOC_MIN_LENGTH = 250;
 const DRAFT_SAVE_DELAY_MS = 400;
+const MIN_REFRESH_INTERVAL_MS = 5000;
+const TOAST_DURATION_MS = 6000;
 
 logoutButton.addEventListener('click', () => logout());
 
@@ -70,6 +75,31 @@ function formatDate(value) {
   const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('nb-NO', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(date);
+}
+
+function showToast(message, { actionLabel, onAction } = {}) {
+  const toast = document.createElement('div');
+  toast.className = 'write-toast';
+  toast.setAttribute('role', 'status');
+
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.appendChild(text);
+
+  if (actionLabel && onAction) {
+    const actionBtn = document.createElement('button');
+    actionBtn.type = 'button';
+    actionBtn.className = 'write-toast-action';
+    actionBtn.textContent = actionLabel;
+    actionBtn.addEventListener('click', () => {
+      toast.remove();
+      onAction();
+    });
+    toast.appendChild(actionBtn);
+  }
+
+  toastContainer.appendChild(toast);
+  window.setTimeout(() => toast.remove(), TOAST_DURATION_MS);
 }
 
 function handleFirestoreError(err, fallback) {
@@ -260,6 +290,7 @@ function showEditMode(doc) {
 async function loadDocs() {
   try {
     currentDocs = await getDocuments();
+    lastDocsFetchAt = Date.now();
     renderDocList(currentDocs);
     if (!currentDocId) {
       currentDocId = getDocIdFromHash();
@@ -289,6 +320,64 @@ function selectDoc(id) {
   renderDocList(currentDocs);
   showViewMode(doc);
 }
+
+async function refreshDocsInBackground() {
+  const openId = currentDocId;
+  const previousOpenDoc = openId ? currentDocs.find((d) => d.id === openId) : null;
+
+  let freshDocs;
+  try {
+    freshDocs = await getDocuments();
+  } catch (err) {
+    console.error('Kunne ikke sjekke etter nye dokumenter.', err);
+    return;
+  }
+
+  currentDocs = freshDocs;
+  renderDocList(currentDocs);
+
+  if (!openId) return;
+
+  const freshOpenDoc = currentDocs.find((d) => d.id === openId);
+  const isEditingOpenDoc = !editMode.classList.contains('d-none') && !isNewDoc;
+
+  if (!freshOpenDoc) {
+    if (isEditingOpenDoc) {
+      showToast('Dette dokumentet ble slettet et annet sted.');
+    } else {
+      currentDocId = null;
+      setDocIdInHash(null);
+      showEmptyState();
+      viewPanel.classList.remove('write-panel-active');
+      backBtn.classList.add('d-none');
+    }
+    return;
+  }
+
+  const changedElsewhere = previousOpenDoc
+    && timestampMillis(freshOpenDoc.updatedAt) > timestampMillis(previousOpenDoc.updatedAt);
+  if (!changedElsewhere) return;
+
+  if (isEditingOpenDoc) {
+    showToast('Dette dokumentet er endret et annet sted mens du redigerer.', {
+      actionLabel: 'Se siste versjon',
+      onAction: () => showEditMode(freshOpenDoc),
+    });
+  } else {
+    showViewMode(freshOpenDoc);
+    showToast('Dokumentet ble oppdatert.');
+  }
+}
+
+function refreshDocsIfDue() {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - lastDocsFetchAt < MIN_REFRESH_INTERVAL_MS) return;
+  lastDocsFetchAt = Date.now();
+  refreshDocsInBackground();
+}
+
+document.addEventListener('visibilitychange', refreshDocsIfDue);
+window.addEventListener('focus', refreshDocsIfDue);
 
 docList.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-doc-id]');

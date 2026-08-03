@@ -28,7 +28,7 @@ async function withFirestoreAuthRetry(operation) {
   }
 }
 
-function timestampMillis(value) {
+export function timestampMillis(value) {
   if (!value) return 0;
   if (typeof value.toMillis === 'function') return value.toMillis();
   const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);

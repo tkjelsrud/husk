@@ -88,6 +88,8 @@ let currentEntries = [];
 let currentEntriesFetched = false;
 let currentFilteredEntries = [];
 let currentRenderedEntries = [];
+let lastEntriesFetchAt = 0;
+const MIN_REFRESH_INTERVAL_MS = 5000;
 
 let dragState = {
   pointerId: null,
@@ -544,6 +546,7 @@ async function loadRecent({ refetch = true } = {}) {
     if (refetch || !currentEntriesFetched) {
       currentEntries = await getEntries();
       currentEntriesFetched = true;
+      lastEntriesFetchAt = Date.now();
     }
     if (activeRecentFilter !== myFilter) return;
     const entries = currentEntries;
@@ -683,3 +686,12 @@ recentList.addEventListener('pointerdown', handleDragPointerDown);
 recentList.addEventListener('pointermove', handleDragPointerMove);
 recentList.addEventListener('pointerup', handleDragPointerEnd);
 recentList.addEventListener('pointercancel', handleDragPointerEnd);
+
+function refreshRecentIfDue() {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - lastEntriesFetchAt < MIN_REFRESH_INTERVAL_MS) return;
+  loadRecent();
+}
+
+document.addEventListener('visibilitychange', refreshRecentIfDue);
+window.addEventListener('focus', refreshRecentIfDue);

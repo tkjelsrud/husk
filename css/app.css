@@ -1339,11 +1339,59 @@ body.app-auth-ready nav {
   padding-bottom: 0.25rem;
 }
 
+.write-toast-container {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 320px;
+}
+
+.write-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(106, 82, 51, 0.3);
+  border-radius: 10px;
+  background: #463320;
+  color: #f5efe6;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.2);
+  font-size: 0.88rem;
+  animation: write-toast-in 160ms ease;
+}
+
+.write-toast-action {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #f5efe6;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+@keyframes write-toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Mobile: hide panel until a doc is selected */
 @media (max-width: 700px) {
   .write-shell {
     grid-template-columns: 1fr;
     position: relative;
+  }
+
+  .write-toast-container {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
   }
 
   .write-panel {
