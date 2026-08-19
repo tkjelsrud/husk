@@ -4,8 +4,6 @@ import { normalizeEntryText, validateCategory, validateEntryText } from './lib/e
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
-import { getAudioNotes } from './audio-db.js';
-import { getDocuments } from './docs-db.js';
 
 const TOUCH_COLORS = ['', '#c9a030', '#93b62d', '#52a840', '#3a9050', '#267a38'];
 function renderTouchDots(meta) {
@@ -81,9 +79,6 @@ function updateTabBodyClass() {
   document.body.classList.toggle('tab-work', activeRecentFilter === 'work');
 }
 
-// Inline audio playback for the read-only "Lyd" folder.
-let audioPlayer = null;
-let audioPlayingBtn = null;
 let currentEntries = [];
 let currentEntriesFetched = false;
 let currentFilteredEntries = [];
@@ -188,9 +183,6 @@ function escapeHtml(str) {
     .replaceAll('"', '&quot;');
 }
 
-function escapeAttr(str) {
-  return String(str).replaceAll('&', '&amp;').replaceAll('"', '&quot;');
-}
 
 function formatShortDate(value) {
   if (!value) return '';
@@ -442,106 +434,8 @@ function resetSwipe() {
   };
 }
 
-function stopAudioPlayback() {
-  if (audioPlayer) {
-    audioPlayer.pause();
-    audioPlayer = null;
-  }
-  if (audioPlayingBtn) {
-    audioPlayingBtn.textContent = '▶';
-    audioPlayingBtn.classList.remove('playing');
-    audioPlayingBtn = null;
-  }
-}
-
-function toggleAudioPlay(btn) {
-  const src = btn.dataset.audioSrc;
-  if (!src) return;
-  if (audioPlayingBtn === btn) {
-    stopAudioPlayback();
-    return;
-  }
-  stopAudioPlayback();
-  audioPlayer = new Audio(src);
-  audioPlayingBtn = btn;
-  btn.textContent = '⏸';
-  btn.classList.add('playing');
-  audioPlayer.addEventListener('ended', stopAudioPlayback);
-  audioPlayer.play().catch((err) => {
-    console.error('Audio playback failed:', err);
-    stopAudioPlayback();
-  });
-}
-
-async function loadAudioFolder(filter) {
-  try {
-    const notes = await getAudioNotes();
-    if (activeRecentFilter !== filter) return;
-    recentSection.classList.remove('d-none');
-    if (notes.length === 0) {
-      recentList.innerHTML = '<div class="text-muted py-2">Ingen lydnotater ennå.</div>';
-      return;
-    }
-    recentList.innerHTML = notes.map((n) => {
-      const title = escapeHtml(n.title || '(uten tittel)');
-      const extract = escapeHtml(makeExtract(n.text));
-      const date = escapeHtml(formatShortDate(n.updatedAt));
-      const src = escapeAttr(n.audioUrl || '');
-      const id = encodeURIComponent(n.id);
-      const extractHtml = extract ? `<span class="audio-folder-extract"> — ${extract}</span>` : '';
-      return `<div class="recent-entry audio-folder-entry">
-        <button class="audio-folder-play" type="button" aria-label="Spill av"
-                data-audio-play data-audio-src="${src}">▶</button>
-        <a class="recent-entry-text audio-folder-link" href="audio.html#${id}"><span class="audio-folder-title">${title}</span>${extractHtml}</a>
-        <span class="touch-dots recent-entry-touch-dots">${renderTouchDots(n.meta)}</span>
-        <span class="recent-entry-date">${date}</span>
-      </div>`;
-    }).join('');
-  } catch (err) {
-    handleFirestoreError(err, 'Kunne ikke laste lydnotater.');
-  }
-}
-
-function makeExtract(content) {
-  const flat = String(content || '').replace(/\s+/g, ' ').trim();
-  return flat.length > 100 ? `${flat.slice(0, 100)}…` : flat;
-}
-
-async function loadWriteFolder(filter) {
-  try {
-    const docs = (await getDocuments()).filter((d) => !d.archived);
-    if (activeRecentFilter !== filter) return;
-    recentSection.classList.remove('d-none');
-    if (docs.length === 0) {
-      recentList.innerHTML = '<div class="text-muted py-2">Ingen skriv ennå.</div>';
-      return;
-    }
-    recentList.innerHTML = docs.map((d) => {
-      const id = encodeURIComponent(d.id);
-      const title = escapeHtml(d.title || '(uten tittel)');
-      const extract = escapeHtml(makeExtract(d.content));
-      const date = escapeHtml(formatShortDate(d.updatedAt));
-      const extractHtml = extract ? `<span class="write-folder-extract"> — ${extract}</span>` : '';
-      return `<a class="recent-entry write-folder-entry" href="write.html#${id}">
-        <span class="recent-entry-text"><span class="write-folder-title">${title}</span>${extractHtml}</span>
-        <span class="recent-entry-date">${date}</span>
-      </a>`;
-    }).join('');
-  } catch (err) {
-    handleFirestoreError(err, 'Kunne ikke laste skriv.');
-  }
-}
-
 async function loadRecent({ refetch = true } = {}) {
   const myFilter = activeRecentFilter;
-  if (myFilter === 'audio') {
-    await loadAudioFolder(myFilter);
-    return;
-  }
-  if (myFilter === 'write') {
-    await loadWriteFolder(myFilter);
-    return;
-  }
   try {
     if (refetch || !currentEntriesFetched) {
       currentEntries = await getEntries();
@@ -631,7 +525,6 @@ if (recentFilterTabs) {
     const nextFilter = button.dataset.filterTab || 'general';
     if (nextFilter === activeRecentFilter) return;
 
-    stopAudioPlayback();
     collapseForm();
     activeRecentFilter = nextFilter;
     setCategoryValue(getDefaultCategory());
@@ -646,12 +539,6 @@ updateRecentFilterTabs();
 updateTabBodyClass();
 
 recentList.addEventListener('click', (e) => {
-  const playBtn = e.target.closest('[data-audio-play]');
-  if (playBtn) {
-    e.preventDefault();
-    toggleAudioPlay(playBtn);
-    return;
-  }
   if (dragState.moved || e.target.closest('[data-drag-handle]')) return;
   const row = e.target.closest('[data-edit-id]');
   if (!row) return;
