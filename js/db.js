@@ -13,7 +13,7 @@ import {
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import { assignSequentialSortOrders, compareEntries, hasSortOrder, SORT_ORDER_STEP, sortEntries } from './lib/entry-order.js';
-import { needsBackendProcessing } from './lib/entry-validation.js';
+import { isSeparatorText, needsBackendProcessing } from './lib/entry-validation.js';
 
 export function isFirestoreAuthError(err) {
   const code = String(err?.code || '');
@@ -89,7 +89,7 @@ export async function addEntry({ textInput, category }, user) {
       textInput,
       category,
       priority: 'normal',
-      processed: !needsBackendProcessing(category),
+      processed: isSeparatorText(textInput) || !needsBackendProcessing(category),
       done: false,
       dueDate: null,
       entryType: 'regular',

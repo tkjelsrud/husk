@@ -979,6 +979,18 @@ body.app-auth-ready nav {
   background: #ece6da;
 }
 
+/* "----" entry: divider between what's now and what can wait */
+.recent-entry-separator {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.recent-entry-separator-line {
+  flex: 1;
+  height: 0;
+  border-top: 1.5px solid #b9ad9a;
+}
+
 .recent-entry-text {
   font-size: 0.95rem;
 }

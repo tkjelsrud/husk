@@ -30,3 +30,9 @@ export function validateCategory(value, allowedCategories) {
 export function needsBackendProcessing(category) {
   return !category || category === 'unknown' || category === 'family';
 }
+
+// An entry whose whole text is a run of dashes ("---" or longer) renders as a
+// divider line in the list instead of a note.
+export function isSeparatorText(value) {
+  return /^-{3,}$/.test(String(value || '').trim());
+}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeEntryText, validateCategory, validateEntryText } from '../js/lib/entry-validation.js';
+import { isSeparatorText, normalizeEntryText, validateCategory, validateEntryText } from '../js/lib/entry-validation.js';
 
 test('normalizeEntryText trims lines and removes blanks', () => {
   assert.equal(normalizeEntryText(' one \n\n two \n'), 'one\ntwo');
@@ -53,4 +53,14 @@ test('validateEntryText accepts multi-line axiom text with attribution', () => {
 test('validateEntryText accepts axiom text with more than five lines', () => {
   const tooLong = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n~ Source';
   assert.deepEqual(validateEntryText(tooLong), { ok: true });
+});
+
+test('isSeparatorText matches three or more dashes only', () => {
+  assert.equal(isSeparatorText('---'), true);
+  assert.equal(isSeparatorText('----'), true);
+  assert.equal(isSeparatorText('  ------  '), true);
+  assert.equal(isSeparatorText('--'), false);
+  assert.equal(isSeparatorText('---- later'), false);
+  assert.equal(isSeparatorText(''), false);
+  assert.equal(isSeparatorText(undefined), false);
 });

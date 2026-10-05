@@ -1,6 +1,6 @@
 import { logout, requireAuth } from './auth.js';
 import { addEntry, getEntries, isFirestoreAuthError, markEntryDone, deleteEntry, saveRegularEntriesOrder, ENTRY_CATEGORIES } from './db.js';
-import { normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
+import { isSeparatorText, normalizeEntryText, validateCategory, validateEntryText } from './lib/entry-validation.js';
 import { sortEntries } from './lib/entry-order.js';
 import { openEditModal } from './edit-modal.js';
 import { matchesRecentFilter as _matchesRecentFilter } from './lib/dashboard-filter.js';
@@ -468,6 +468,15 @@ async function loadRecent({ refetch = true } = {}) {
       const dragHandle = e.done === true
         ? ''
         : `<button class="recent-entry-handle" type="button" aria-label="Flytt notat" data-drag-handle="true">⋮⋮</button>`;
+      if (isSeparatorText(e.textInput)) {
+        return `<div class="recent-entry recent-entry-separator ${doneClass}" role="button" tabindex="0" aria-label="Skillelinje"
+          data-entry-id="${escapeHtml(e.id)}"
+          data-edit-id="${escapeHtml(e.id)}"
+          data-edit-done="${e.done === true ? 'true' : 'false'}">
+          ${dragHandle}
+          <span class="recent-entry-separator-line" aria-hidden="true"></span>
+        </div>`;
+      }
       return `<div class="recent-entry ${doneClass}" role="button" tabindex="0"
         data-entry-id="${escapeHtml(e.id)}"
         data-edit-id="${escapeHtml(e.id)}"
