@@ -459,7 +459,7 @@ async function loadRecent({ refetch = true } = {}) {
       return;
     }
 
-    currentRenderedEntries = filteredEntries.slice(0, 20);
+    currentRenderedEntries = filteredEntries;
     recentList.innerHTML = currentRenderedEntries.map((e) => {
       const text = escapeHtml(String(e.textInput || '').replace(/\s+/g, ' ').trim());
       const date = escapeHtml(formatShortDate(e.createdAt));
