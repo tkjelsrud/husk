@@ -72,11 +72,14 @@ let currentUser = null;
 let activeRecentFilter = 'general';
 
 function getDefaultCategory() {
-  return activeRecentFilter === 'work' ? 'work' : 'general';
+  if (activeRecentFilter === 'work') return 'work';
+  if (activeRecentFilter === 'houseproj') return 'houseproj';
+  return 'general';
 }
 
 function updateTabBodyClass() {
   document.body.classList.toggle('tab-work', activeRecentFilter === 'work');
+  document.body.classList.toggle('tab-houseproj', activeRecentFilter === 'houseproj');
 }
 
 let currentEntries = [];

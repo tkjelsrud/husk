@@ -19,5 +19,9 @@ export function matchesRecentFilter(entry, activeFilter) {
     return entry?.category === 'work' && !hasFixedCalendarDate(entry);
   }
 
-  return entry?.category !== 'work' && !hasFixedCalendarDate(entry);
+  if (activeFilter === 'houseproj') {
+    return entry?.category === 'houseproj' && !hasFixedCalendarDate(entry);
+  }
+
+  return entry?.category !== 'work' && entry?.category !== 'houseproj' && !hasFixedCalendarDate(entry);
 }
