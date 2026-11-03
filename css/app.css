@@ -1516,7 +1516,7 @@ body.app-auth-ready nav {
   position: absolute;
   height: 2px;
   margin-top: -1px;
-  background: #4a4a48;
+  background: #9a9893;
   border-radius: 1px;
   cursor: move;
 }
@@ -1540,7 +1540,7 @@ body.app-auth-ready nav {
 }
 
 .tavle-line.is-selected {
-  box-shadow: 0 0 0 3px rgba(74, 74, 72, 0.2);
+  box-shadow: 0 0 0 3px rgba(154, 152, 147, 0.25);
 }
 
 .tavle-line-remove {
