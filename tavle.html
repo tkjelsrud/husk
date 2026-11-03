@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tavle - Husk</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="theme-color" content="#1d1d1b" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body class="app-auth-pending tavle-page">
+  <nav class="navbar navbar-expand-sm navbar-dark app-nav app-nav-compact">
+    <div class="container-fluid">
+      <a class="navbar-brand brand-lockup" href="dashboard.html" aria-label="Husk"><img src="brand-mark.svg" alt="" class="brand-h" aria-hidden="true" /><span class="brand-usk">usk</span></a>
+      <div class="app-nav-links navbar-nav ms-auto align-items-sm-center gap-sm-2">
+        <a class="nav-link" href="dashboard.html">Ny</a>
+        <a class="nav-link active" href="tavle.html">Tavle</a>
+        <a class="nav-link" href="fixed.html">Faste</a>
+        <a class="nav-link" href="write.html">Skriv</a>
+        <a class="nav-link" href="audio.html">Lyd</a>
+        <span id="user-label" class="nav-user small"></span>
+        <button id="logout-btn" class="btn btn-outline-light btn-sm" type="button">Logg ut</button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="tavle-viewport" class="tavle-viewport">
+    <div id="tavle-world" class="tavle-world"></div>
+  </main>
+
+  <div class="tavle-toolbar" role="toolbar" aria-label="Verktøy">
+    <button class="tavle-tool is-active" type="button" data-tool="text" aria-pressed="true" title="Tekst — klikk for å skrive">Tekst</button>
+    <button class="tavle-tool" type="button" data-tool="line" aria-pressed="false" title="Linje — dra for vannrett/loddrett linje (L)">Linje</button>
+  </div>
+
+  <div id="tavle-status" class="tavle-status" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/tavle.js"></script>
+</body>
+</html>

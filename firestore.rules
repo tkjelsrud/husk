@@ -90,6 +90,30 @@ service cloud.firestore {
         && (!('archived' in request.resource.data) || request.resource.data.archived is bool);
       allow delete: if isAllowedUser();
     }
+    match /tavle/{itemId} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser()
+        && request.resource.data.keys().hasOnly(['text', 'kind', 'orientation', 'length', 'x', 'y', 'addedByUid', 'addedByEmail', 'createdAt', 'updatedAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 20000
+        && request.resource.data.x is number
+        && request.resource.data.y is number
+        && (!('kind' in request.resource.data) || request.resource.data.kind in ['text', 'line'])
+        && (!('orientation' in request.resource.data) || request.resource.data.orientation in ['h', 'v'])
+        && (!('length' in request.resource.data) || (request.resource.data.length is number && request.resource.data.length > 0 && request.resource.data.length <= 10000))
+        && request.resource.data.addedByUid == request.auth.uid
+        && request.resource.data.addedByEmail == request.auth.token.email
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isAllowedUser()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'x', 'y', 'length', 'orientation', 'updatedAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 20000
+        && request.resource.data.x is number
+        && request.resource.data.y is number
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isAllowedUser();
+    }
     match /{document=**} {
       allow read, write: if false;
     }

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from datetime import datetime, timezone
 import pytest
 
-from backend.processor.firestore_client import create_entry, update_entry, fetch_entries
+from backend.processor.firestore_client import create_entry, update_entry, fetch_entries, fetch_tavle_notes
 
 @pytest.fixture
 def mock_firestore_client():
@@ -78,3 +78,24 @@ def test_fetch_entries(mock_firestore_client, sample_entry):
     assert len(entries) == 1
     assert entries[0].id == "test_id"
     
+
+
+def test_fetch_tavle_notes_skips_lines_and_empty_and_sorts():
+    def snap(doc_id, data):
+        m = MagicMock()
+        m.id = doc_id
+        m.to_dict.return_value = data
+        return m
+
+    db = MagicMock()
+    db.collection.return_value.stream.return_value = [
+        snap("b", {"text": "below", "x": 0, "y": 100}),
+        snap("line", {"kind": "line", "text": "", "x": 0, "y": 0, "orientation": "h", "length": 50}),
+        snap("empty", {"text": "  ", "x": 0, "y": 0}),
+        snap("a", {"text": "top", "x": 10, "y": -20}),
+    ]
+
+    notes = fetch_tavle_notes(db)
+
+    db.collection.assert_called_with("tavle")
+    assert [n["id"] for n in notes] == ["a", "b"]

@@ -213,3 +213,21 @@ def delete_document(db, doc_id: str):
         return False
     ref.delete()
     return True
+
+
+def fetch_tavle_notes(db):
+    """Text boxes on the shared Husk board (Tavle), sorted top-to-bottom, left-to-right.
+
+    Lines (kind == 'line') are layout only and are left out.
+    """
+    notes = []
+    for d in db.collection('tavle').stream():
+        data = d.to_dict() or {}
+        if data.get('kind', 'text') != 'text':
+            continue
+        text = data.get('text') or ''
+        if not text.strip():
+            continue
+        notes.append({'id': d.id, 'text': text, 'x': data.get('x', 0), 'y': data.get('y', 0), 'updatedAt': data.get('updatedAt')})
+    notes.sort(key=lambda n: (n['y'], n['x']))
+    return notes

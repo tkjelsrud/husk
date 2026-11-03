@@ -13,6 +13,7 @@ from .processor.firestore_client import (
     delete_entry,
     fetch_documents,
     fetch_entries,
+    fetch_tavle_notes,
     get_document,
     get_entry,
     update_document,
@@ -239,6 +240,11 @@ def handle_tools_list(request_id):
                 },
             },
             {
+                'name': 'get_tavle',
+                'description': 'Read all text boxes on the shared Husk board (Tavle), ordered top-to-bottom, left-to-right, with their x/y position.',
+                'inputSchema': {'type': 'object', 'properties': {}},
+            },
+            {
                 'name': 'delete_document',
                 'description': 'Delete a Husk /write document by id.',
                 'inputSchema': {
@@ -391,6 +397,19 @@ def handle_tools_call(request_id, params):
                     'text': json.dumps({'item': serialize_entry(entry)}, ensure_ascii=True),
                 }
             ]
+        })
+
+    if tool_name == 'get_tavle':
+        notes = fetch_tavle_notes(db)
+        serialized = [
+            {
+                **n,
+                'updatedAt': n['updatedAt'].isoformat() if getattr(n.get('updatedAt'), 'isoformat', None) else str(n.get('updatedAt') or ''),
+            }
+            for n in notes
+        ]
+        return success_response(request_id, {
+            'content': [{'type': 'text', 'text': json.dumps({'notes': serialized}, ensure_ascii=True)}]
         })
 
     if tool_name == 'list_documents':
