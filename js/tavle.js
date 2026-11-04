@@ -8,10 +8,10 @@ const HALF = WORLD_SIZE / 2;
 const SAVE_DELAY_MS = 600;
 const PAN_THRESHOLD_PX = 4;
 const VIEW_STORAGE_KEY = 'husk-tavle-view';
-// 1 = the original size. Zooming out to 1/2 gives an overview; zooming in is
-// capped just above 1 since text is already at reading size there.
+// 1 = the original size, which is also the closest zoom; zooming out to 1/2
+// gives an overview.
 const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 1.25;
+const MAX_ZOOM = 1;
 const ZOOM_STEP = 1.25;
 
 const viewport = document.getElementById('tavle-viewport');
