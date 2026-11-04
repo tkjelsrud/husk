@@ -1500,8 +1500,16 @@ body.app-auth-ready nav {
 }
 
 /* Faint dot grid: a sense of space while panning, without competing with text. */
-.tavle-world {
+.tavle-sizer {
   position: relative;
+  overflow: hidden;
+}
+
+.tavle-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
   cursor: text;
   background-image: radial-gradient(circle, rgba(29, 29, 27, 0.13) 1px, transparent 1.2px);
   background-size: 24px 24px;
@@ -1510,6 +1518,23 @@ body.app-auth-ready nav {
 .tavle-world.tool-line {
   cursor: crosshair;
   touch-action: none;
+}
+
+.tavle-world.tool-hand {
+  cursor: grab;
+}
+
+.tavle-world.tool-hand.is-panning {
+  cursor: grabbing;
+}
+
+.tavle-world.tool-hand .tavle-note,
+.tavle-world.tool-hand .tavle-line {
+  pointer-events: none;
+}
+
+.tavle-world.tool-hand .tavle-note-handle {
+  display: none;
 }
 
 .tavle-line {
@@ -1590,6 +1615,25 @@ body.app-auth-ready nav {
   color: #1d1d1b;
   font: inherit;
   font-size: 0.85rem;
+}
+
+.tavle-toolbar-sep {
+  width: 1px;
+  margin: 0.25rem 0.15rem;
+  background: rgba(29, 29, 27, 0.15);
+}
+
+.tavle-zoom-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tavle-zoom-level {
+  min-width: 3.6rem;
+  padding: 0.3rem 0.4rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(29, 29, 27, 0.7);
 }
 
 .tavle-tool.is-active {

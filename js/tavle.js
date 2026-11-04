@@ -8,9 +8,16 @@ const HALF = WORLD_SIZE / 2;
 const SAVE_DELAY_MS = 600;
 const PAN_THRESHOLD_PX = 4;
 const VIEW_STORAGE_KEY = 'husk-tavle-view';
+// 1 = the original size. Zooming out to 1/4 gives an overview; zooming in is
+// capped just above 1 since text is already at reading size there.
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 1.25;
+const ZOOM_STEP = 1.25;
 
 const viewport = document.getElementById('tavle-viewport');
+const sizer = document.getElementById('tavle-sizer');
 const world = document.getElementById('tavle-world');
+const zoomLevelBtn = document.getElementById('zoom-reset');
 const statusEl = document.getElementById('tavle-status');
 const toolButtons = [...document.querySelectorAll('[data-tool]')];
 const userLabel = document.getElementById('user-label');
@@ -20,12 +27,19 @@ world.style.width = `${WORLD_SIZE}px`;
 world.style.height = `${WORLD_SIZE}px`;
 
 let currentUser = null;
+let scale = 1;
 const notes = new Map(); // id -> note or line state
-let tool = 'text'; // 'text' | 'line'
+let tool = 'text'; // 'hand' | 'text' | 'line'
 
 function setTool(next) {
   tool = next;
   world.classList.toggle('tool-line', tool === 'line');
+  world.classList.toggle('tool-hand', tool === 'hand');
+  if (tool === 'hand') {
+    // Read-only: leave any box being edited (saves it) and drop selection.
+    if (document.activeElement?.classList.contains('tavle-note-text')) document.activeElement.blur();
+    selectLine(null);
+  }
   for (const button of toolButtons) {
     const active = button.dataset.tool === tool;
     button.classList.toggle('is-active', active);
@@ -68,33 +82,153 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+// ── Zoom ──────────────────────────────────────────────────────────────────
+// The world keeps its full size and is CSS-scaled; the sizer around it takes
+// the scaled size so native scrolling covers exactly the visible board.
+
+function applyScale(next) {
+  scale = clamp(next, MIN_ZOOM, MAX_ZOOM);
+  world.style.transform = `scale(${scale})`;
+  sizer.style.width = `${WORLD_SIZE * scale}px`;
+  sizer.style.height = `${WORLD_SIZE * scale}px`;
+  zoomLevelBtn.textContent = `${Math.round(scale * 100)} %`;
+}
+
+// Zoom keeping the board point under (clientX, clientY) fixed on screen.
+function zoomTo(next, clientX, clientY) {
+  const rect = viewport.getBoundingClientRect();
+  const px = (clientX ?? rect.left + viewport.clientWidth / 2) - rect.left;
+  const py = (clientY ?? rect.top + viewport.clientHeight / 2) - rect.top;
+  const boardX = (viewport.scrollLeft + px) / scale;
+  const boardY = (viewport.scrollTop + py) / scale;
+  applyScale(next);
+  viewport.scrollLeft = boardX * scale - px;
+  viewport.scrollTop = boardY * scale - py;
+  saveView();
+}
+
+document.getElementById('zoom-in').addEventListener('click', () => zoomTo(scale * ZOOM_STEP));
+document.getElementById('zoom-out').addEventListener('click', () => zoomTo(scale / ZOOM_STEP));
+zoomLevelBtn.addEventListener('click', () => zoomTo(1));
+
+// A mouse wheel zooms; two-finger trackpad scrolling still pans. Browsers
+// don't say which device sent a wheel event, so use the legacy wheelDeltaY:
+// for trackpads it is exactly -3 × deltaY, for wheel notches it is not.
+function isMouseWheel(event) {
+  if (event.deltaMode !== 0) return true; // line/page units: wheel notches
+  if (event.deltaX !== 0) return false;
+  if (typeof event.wheelDeltaY === 'number' && event.wheelDeltaY !== 0) {
+    return event.wheelDeltaY !== -3 * event.deltaY;
+  }
+  return false;
+}
+
+// Trackpad pinch (Chrome/Firefox/Edge) and ctrl/cmd + wheel arrive as wheel
+// events with ctrlKey set. Shift + wheel keeps scrolling sideways.
+viewport.addEventListener('wheel', (event) => {
+  const pinchOrModifier = event.ctrlKey || event.metaKey;
+  if (!pinchOrModifier && (event.shiftKey || !isMouseWheel(event))) return;
+  event.preventDefault();
+  const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+  // Pinch sends many small deltas; a wheel notch is ~100. Cap each event so
+  // one notch is a gentle ~12% step rather than a jump.
+  const capped = clamp(delta, -12, 12);
+  zoomTo(scale * Math.exp(-capped * 0.01), event.clientX, event.clientY);
+}, { passive: false });
+
+// Safari trackpad pinch.
+let gestureBase = null;
+viewport.addEventListener('gesturestart', (event) => {
+  event.preventDefault();
+  gestureBase = scale;
+});
+viewport.addEventListener('gesturechange', (event) => {
+  if (gestureBase === null) return;
+  event.preventDefault();
+  zoomTo(gestureBase * event.scale, event.clientX, event.clientY);
+});
+viewport.addEventListener('gestureend', () => { gestureBase = null; });
+
+// Two-finger pinch on touch screens.
+let pinch = null;
+function touchMidDist(touches) {
+  const [a, b] = touches;
+  return {
+    x: (a.clientX + b.clientX) / 2,
+    y: (a.clientY + b.clientY) / 2,
+    dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+  };
+}
+viewport.addEventListener('touchstart', (event) => {
+  if (event.touches.length !== 2) return;
+  pinch = { ...touchMidDist(event.touches), base: scale };
+}, { passive: true });
+viewport.addEventListener('touchmove', (event) => {
+  if (!pinch || event.touches.length !== 2) return;
+  event.preventDefault();
+  const now = touchMidDist(event.touches);
+  // Zoom around the pinch centre, and let the centre's movement pan.
+  zoomTo(pinch.base * (now.dist / pinch.dist), pinch.x, pinch.y);
+  viewport.scrollLeft -= now.x - pinch.x;
+  viewport.scrollTop -= now.y - pinch.y;
+  pinch.x = now.x;
+  pinch.y = now.y;
+  pinch.base = scale;
+  pinch.dist = now.dist;
+}, { passive: false });
+viewport.addEventListener('touchend', (event) => {
+  if (event.touches.length < 2) pinch = null;
+});
+
+document.addEventListener('keydown', (event) => {
+  const mod = event.ctrlKey || event.metaKey;
+  const editing = document.activeElement?.classList.contains('tavle-note-text');
+  if (!mod && editing) return;
+  if (!mod && (event.altKey)) return;
+  if (event.key === '+' || event.key === '=') {
+    event.preventDefault();
+    zoomTo(scale * ZOOM_STEP);
+  } else if (event.key === '-' || event.key === '_') {
+    event.preventDefault();
+    zoomTo(scale / ZOOM_STEP);
+  } else if (event.key === '0') {
+    event.preventDefault();
+    zoomTo(1);
+  }
+});
+
+// ── Viewport position (per device convenience) ────────────────────────────
+
 function restoreView() {
   let saved = null;
   try {
     saved = JSON.parse(localStorage.getItem(VIEW_STORAGE_KEY) || 'null');
   } catch { /* storage unavailable */ }
+  applyScale(saved && Number.isFinite(saved.scale) ? saved.scale : 1);
   if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
     viewport.scrollLeft = saved.left;
     viewport.scrollTop = saved.top;
   } else {
     // Start with the board's origin near the top-left third of the screen.
-    viewport.scrollLeft = HALF - viewport.clientWidth / 3;
-    viewport.scrollTop = HALF - viewport.clientHeight / 3;
+    viewport.scrollLeft = HALF * scale - viewport.clientWidth / 3;
+    viewport.scrollTop = HALF * scale - viewport.clientHeight / 3;
   }
 }
 
 let viewSaveTimer = null;
-viewport.addEventListener('scroll', () => {
+function saveView() {
   clearTimeout(viewSaveTimer);
   viewSaveTimer = setTimeout(() => {
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, JSON.stringify({
         left: viewport.scrollLeft,
         top: viewport.scrollTop,
+        scale,
       }));
     } catch { /* storage unavailable */ }
   }, 250);
-}, { passive: true });
+}
+viewport.addEventListener('scroll', saveView, { passive: true });
 
 // ── Notes ─────────────────────────────────────────────────────────────────
 
@@ -206,9 +340,9 @@ function removeNoteElement(note) {
 
 function addNoteAt(clientX, clientY) {
   const rect = world.getBoundingClientRect();
-  const x = clamp(clientX - rect.left - HALF, -HALF, HALF - 200);
+  const x = clamp((clientX - rect.left) / scale - HALF, -HALF, HALF - 200);
   // Offset so the caret lands on the click rather than below it.
-  const y = clamp(clientY - rect.top - HALF - 12, -HALF, HALF - 40);
+  const y = clamp((clientY - rect.top) / scale - HALF - 12, -HALF, HALF - 40);
   const note = createNoteElement({ id: newNoteId(), text: '', x, y, persisted: false });
   note.el.classList.add('is-active');
   note.textEl.focus();
@@ -229,8 +363,8 @@ function attachDrag(note, handle) {
     note.el.classList.add('is-dragging');
 
     const onMove = (moveEvent) => {
-      note.x = clamp(originX + moveEvent.clientX - startX, -HALF, HALF - 200);
-      note.y = clamp(originY + moveEvent.clientY - startY, -HALF, HALF - 40);
+      note.x = clamp(originX + (moveEvent.clientX - startX) / scale, -HALF, HALF - 200);
+      note.y = clamp(originY + (moveEvent.clientY - startY) / scale, -HALF, HALF - 40);
       positionNote(note);
     };
     const onUp = () => {
@@ -317,8 +451,8 @@ function createLineElement(state) {
     line.dragging = true;
 
     const onMove = (moveEvent) => {
-      line.x = clamp(originX + moveEvent.clientX - startX, -HALF, HALF - 1);
-      line.y = clamp(originY + moveEvent.clientY - startY, -HALF, HALF - 1);
+      line.x = clamp(originX + (moveEvent.clientX - startX) / scale, -HALF, HALF - 1);
+      line.y = clamp(originY + (moveEvent.clientY - startY) / scale, -HALF, HALF - 1);
       layoutLine(line);
     };
     const onUp = () => {
@@ -344,7 +478,7 @@ let drawing = null;
 
 function worldPoint(event) {
   const rect = world.getBoundingClientRect();
-  return { x: event.clientX - rect.left - HALF, y: event.clientY - rect.top - HALF };
+  return { x: (event.clientX - rect.left) / scale - HALF, y: (event.clientY - rect.top) / scale - HALF };
 }
 
 function lineFromDrag(start, end) {
@@ -400,6 +534,10 @@ document.addEventListener('keydown', (event) => {
     setTool('text');
   } else if (event.key === 'l' || event.key === 'L') {
     setTool(tool === 'line' ? 'text' : 'line');
+  } else if (event.key === 'h' || event.key === 'H') {
+    setTool('hand');
+  } else if (event.key === 't' || event.key === 'T') {
+    setTool('text');
   }
 });
 
@@ -411,7 +549,9 @@ let suppressClick = false;
 
 world.addEventListener('pointerdown', (event) => {
   suppressClick = false;
-  if (tool !== 'text' || event.target !== world || event.pointerType !== 'mouse' || event.button !== 0) return;
+  // Mouse drag on empty space pans in text mode; in hand mode notes and lines
+  // ignore the pointer, so a drag anywhere pans.
+  if (tool === 'line' || event.target !== world || event.pointerType !== 'mouse' || event.button !== 0) return;
   pan = {
     id: event.pointerId,
     startX: event.clientX,
