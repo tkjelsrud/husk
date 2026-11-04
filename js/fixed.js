@@ -133,8 +133,9 @@ form.addEventListener('submit', async (event) => {
       category,
       recurrence
     }, currentUser);
+    const lastCategory = categoryField.value;
     form.reset();
-    categoryField.value = 'unknown';
+    categoryField.value = lastCategory;
     recurrenceTypeField.value = 'none';
     weeklyOptions.classList.add('d-none');
     monthlyOptions.classList.add('d-none');
