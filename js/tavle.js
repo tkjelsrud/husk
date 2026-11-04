@@ -8,9 +8,9 @@ const HALF = WORLD_SIZE / 2;
 const SAVE_DELAY_MS = 600;
 const PAN_THRESHOLD_PX = 4;
 const VIEW_STORAGE_KEY = 'husk-tavle-view';
-// 1 = the original size. Zooming out to 1/4 gives an overview; zooming in is
+// 1 = the original size. Zooming out to 1/2 gives an overview; zooming in is
 // capped just above 1 since text is already at reading size there.
-const MIN_ZOOM = 0.25;
+const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
 const ZOOM_STEP = 1.25;
 
