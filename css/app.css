@@ -1666,13 +1666,16 @@ body.app-auth-ready nav {
   background: rgba(255, 255, 255, 0.55);
 }
 
+/* Handwritten "sketch" face for board text only; the rest of Husk keeps the
+   system font. Kalam covers æ/ø/å. */
 .tavle-note-text {
-  min-height: 1.5em;
+  min-height: 1.4em;
   outline: none;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  line-height: 1.5;
-  font-size: 1rem;
+  font-family: 'Kalam', 'Comic Sans MS', 'Segoe Print', cursive;
+  line-height: 1.4;
+  font-size: 1.1rem;
   cursor: text;
 }
 
