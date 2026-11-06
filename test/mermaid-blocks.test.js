@@ -45,3 +45,21 @@ test('header in the middle of a paragraph is not a diagram', () => {
   const md = 'Some line\nflowchart LR\n  A --> B';
   assert.equal(fenceBareMermaid(md), md);
 });
+
+test('several diagrams with text between them', () => {
+  const md = 'Intro\n\nflowchart LR\n  A --> B\n\nTekst i mellom.\n\nsequenceDiagram\n  A->>B: hei\n\nMer tekst.';
+  assert.equal(
+    fenceBareMermaid(md),
+    'Intro\n\n```mermaid\nflowchart LR\n  A --> B\n```\n\nTekst i mellom.\n\n```mermaid\nsequenceDiagram\n  A->>B: hei\n```\n\nMer tekst.'
+  );
+});
+
+test('unindented diagram ends at a prose sentence after a blank line', () => {
+  const md = 'flowchart LR\nA --> B\n\nB --> C\n\nTekst i mellom her.';
+  assert.equal(fenceBareMermaid(md), '```mermaid\nflowchart LR\nA --> B\n\nB --> C\n```\n\nTekst i mellom her.');
+});
+
+test('sentence-like Mermaid statements stay inside the diagram', () => {
+  const md = 'sequenceDiagram\nA->>B: hei\n\nNote over A: Klar til start.\n\nSlutt på notatet.';
+  assert.equal(fenceBareMermaid(md), '```mermaid\nsequenceDiagram\nA->>B: hei\n\nNote over A: Klar til start.\n```\n\nSlutt på notatet.');
+});

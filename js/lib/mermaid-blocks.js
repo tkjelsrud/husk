@@ -31,6 +31,20 @@ function isIndented(line) {
   return /^\s/.test(line);
 }
 
+// Statement keywords that can start a Mermaid line which otherwise reads like
+// a sentence, e.g. "Note over A: Klar til start."
+const STATEMENT = /^(?:note|participant|actor|title|section|class|classDef|style|linkStyle|click|loop|alt|else|opt|par|and|critical|break|rect|end|autonumber|activate|deactivate|state|direction|subgraph|dateFormat|axisFormat|excludes|accTitle|accDescr)\b/i;
+
+// A sentence ("Tekst i mellom.") rather than diagram syntax: ends like prose
+// and has none of Mermaid's arrows, brackets or statement keywords.
+function looksLikeProse(line) {
+  const trimmed = line.trim();
+  return /[.!?]$/.test(trimmed)
+    && /\s/.test(trimmed)
+    && !STATEMENT.test(trimmed)
+    && !/-->|->>|-\)|--x|==>|-\.->|---|[[\]{}()|]/.test(trimmed);
+}
+
 // Index of the last line belonging to a bare diagram that starts at `start`.
 function findDiagramEnd(lines, start) {
   // If the diagram body is indented under its header, an unindented line after
@@ -43,6 +57,7 @@ function findDiagramEnd(lines, start) {
     const line = lines[i];
     if (FENCE.test(line) || HEADING.test(line) || RULE.test(line)) break;
     if (bodyIndented && !isBlank(line) && !isIndented(line) && isBlank(lines[i - 1])) break;
+    if (!bodyIndented && isBlank(lines[i - 1]) && looksLikeProse(line)) break;
     if (!isBlank(line)) end = i;
   }
   return end;
