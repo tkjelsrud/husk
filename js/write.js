@@ -7,6 +7,8 @@ import {
   timestampMillis,
   updateDocument,
 } from './docs-db.js';
+import { fenceBareMermaid } from './lib/mermaid-blocks.js';
+import { renderMermaidBlocks } from './write-mermaid.js';
 
 const docList = document.getElementById('doc-list');
 const toastContainer = document.getElementById('write-toast-container');
@@ -260,12 +262,13 @@ function showViewMode(doc) {
 
   viewTitle.textContent = doc.title || '(uten tittel)';
   viewBody.innerHTML = window.marked
-    ? window.marked.parse(doc.content || '')
+    ? window.marked.parse(fenceBareMermaid(doc.content || ''))
     : `<pre>${escapeHtml(doc.content || '')}</pre>`;
 
   if (window.hljs) {
-    viewBody.querySelectorAll('pre code').forEach((block) => window.hljs.highlightElement(block));
+    viewBody.querySelectorAll('pre code:not(.language-mermaid)').forEach((block) => window.hljs.highlightElement(block));
   }
+  renderMermaidBlocks(viewBody);
 
   archiveBtn.textContent = doc.archived ? 'Hent fram' : 'Arkiver';
 
